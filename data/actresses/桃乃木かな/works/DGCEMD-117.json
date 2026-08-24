@@ -5,13 +5,11 @@
   "actress": "桃乃木かな",
   "series": "DGCEMD",
   "maker": null,
-  "labels": [
-    "4K"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/桃乃木かな/DGCEMD-117.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/dgcemd-117",
   "updated_at": "2026-08-24"
 }

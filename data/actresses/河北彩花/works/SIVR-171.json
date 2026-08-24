@@ -1,6 +1,6 @@
 {
   "code": "SIVR-171",
-  "title": "【VR】VR NO.1 STYLE 河北彩花 解禁·河北彩花",
+  "title": "【VR】VR NO.1 STYLE 河北彩花 解禁",
   "date": "2021-11-25",
   "actress": "河北彩花",
   "series": "SIVR",
@@ -8,13 +8,8 @@
   "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SIVR-171.jpg",
-  "segments": [
-    1,
-    2,
-    3,
-    4
-  ],
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "segments": null,
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/sivr-171",
   "updated_at": "2026-08-24"
 }

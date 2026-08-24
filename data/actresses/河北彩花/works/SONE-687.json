@@ -1,18 +1,15 @@
 {
   "code": "SONE-687",
-  "title": "酔わされて輪●されて 河北彩伽·河北彩花",
+  "title": "酔わされて輪●されて 河北彩伽",
   "date": "2025-04-17",
   "actress": "河北彩花",
   "series": "SONE",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SONE-687.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/sone-687",
   "updated_at": "2026-08-24"
 }

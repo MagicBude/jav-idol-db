@@ -1,18 +1,15 @@
 {
   "code": "SONE-853",
-  "title": "8月26日 花火大会の夜 ずっと両片想いだった僕らは結ばれ 十数年分の’好き’をぶつけ合うように身体を貪り合った 河北彩伽·河北彩花",
+  "title": "8月26日 花火大会の夜 ずっと両片想いだった僕らは結ばれ 十数年分の’好き’をぶつけ合うように身体を貪り合った 河北彩伽",
   "date": "2025-08-21",
   "actress": "河北彩花",
   "series": "SONE",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SONE-853.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/sone-853",
   "updated_at": "2026-08-24"
 }

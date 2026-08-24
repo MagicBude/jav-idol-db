@@ -1,7 +1,7 @@
 {
   "code": "MEYD-798",
   "title": "",
-  "date": "2023-02-21",
+  "date": null,
   "actress": "桃乃木かな",
   "series": "MEYD",
   "maker": null,
@@ -9,7 +9,7 @@
   "tags": [],
   "cover": "assets/img/桃乃木かな/MEYD-798.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

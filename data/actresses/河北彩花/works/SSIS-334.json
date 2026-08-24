@@ -5,14 +5,11 @@
   "actress": "河北彩花",
   "series": "SSIS",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SSIS-334.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

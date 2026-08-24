@@ -1,6 +1,6 @@
 {
   "code": "AMBI-129",
-  "title": "(プラネットプラス) 「家出少女とオジサンの小さな恋の物語」离家出走少女和大叔的小小恋爱物语",
+  "title": "家出少女とオジサンの小さな恋の物語 永野いち夏",
   "date": "2021-06-01",
   "actress": "永野一夏",
   "series": "AMBI",
@@ -9,7 +9,7 @@
   "tags": [],
   "cover": "assets/img/永野一夏/AMBI-129.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/ambi-129",
   "updated_at": "2026-08-24"
 }

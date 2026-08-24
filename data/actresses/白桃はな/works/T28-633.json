@@ -1,17 +1,15 @@
 {
   "code": "T28-633",
   "title": "",
-  "date": "2022-12-23",
+  "date": null,
   "actress": "白桃はな",
-  "series": "T",
+  "series": "T28",
   "maker": null,
-  "labels": [
-    "4K"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/白桃はな/T28-633.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

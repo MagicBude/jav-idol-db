@@ -1,17 +1,15 @@
 {
   "code": "MBR-BN036",
-  "title": "石川澪 湯女美人-fanart",
+  "title": "石川澪 湯女美人",
   "date": "2024-02-20",
   "actress": "石川澪",
   "series": "MBR",
   "maker": null,
-  "labels": [
-    "4K"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/石川澪/MBR-BN036.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/mbr-bn036",
   "updated_at": "2026-08-24"
 }

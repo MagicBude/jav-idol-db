@@ -1,18 +1,15 @@
 {
   "code": "SONE-817",
-  "title": "朝、目が覚めたら僕が河北彩伽のご主人様に！？·河北彩花",
+  "title": "朝、目が覚めたら僕が河北彩伽のご主人様に！？",
   "date": "2025-10-23",
   "actress": "河北彩花",
   "series": "SONE",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SONE-817.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/sone-817",
   "updated_at": "2026-08-24"
 }

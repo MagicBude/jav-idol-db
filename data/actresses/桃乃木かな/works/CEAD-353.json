@@ -5,13 +5,11 @@
   "actress": "桃乃木かな",
   "series": "CEAD",
   "maker": null,
-  "labels": [
-    "4K"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/桃乃木かな/CEAD-353.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/cead-353",
   "updated_at": "2026-08-24"
 }

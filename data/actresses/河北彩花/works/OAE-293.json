@@ -1,18 +1,15 @@
 {
   "code": "OAE-293",
-  "title": "彼女のプラウダ 河北彩伽·河北彩花",
+  "title": "彼女のプラウダ 河北彩伽",
   "date": "2025-12-18",
   "actress": "河北彩花",
   "series": "OAE",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/OAE-293.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/oae-293",
   "updated_at": "2026-08-24"
 }

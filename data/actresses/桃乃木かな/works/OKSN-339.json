@@ -1,7 +1,7 @@
 {
   "code": "OKSN-339",
   "title": "",
-  "date": "2021-06-16",
+  "date": null,
   "actress": "桃乃木かな",
   "series": "OKSN",
   "maker": null,
@@ -9,7 +9,7 @@
   "tags": [],
   "cover": "assets/img/桃乃木かな/OKSN-339.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

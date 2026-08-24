@@ -1,7 +1,7 @@
 {
   "code": "GOPJ-543",
-  "title": "1of4",
-  "date": "2021-06-04",
+  "title": "",
+  "date": null,
   "actress": "桃乃木かな",
   "series": "GOPJ",
   "maker": null,
@@ -9,7 +9,7 @@
   "tags": [],
   "cover": "assets/img/桃乃木かな/GOPJ-543.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

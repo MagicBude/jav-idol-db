@@ -1,18 +1,15 @@
 {
   "code": "OAE-292",
-  "title": "森の聖域 石川澪-fanart",
+  "title": "森の聖域 石川澪",
   "date": "2025-10-23",
   "actress": "石川澪",
   "series": "OAE",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/石川澪/OAE-292.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/oae-292",
   "updated_at": "2026-08-24"
 }

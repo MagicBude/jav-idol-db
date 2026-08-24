@@ -1,7 +1,7 @@
 {
   "code": "HMN-337",
   "title": "",
-  "date": "2023-03-21",
+  "date": null,
   "actress": "白桃はな",
   "series": "HMN",
   "maker": null,
@@ -9,7 +9,7 @@
   "tags": [],
   "cover": "assets/img/白桃はな/HMN-337.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

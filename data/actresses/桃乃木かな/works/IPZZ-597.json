@@ -5,13 +5,11 @@
   "actress": "桃乃木かな",
   "series": "IPZZ",
   "maker": null,
-  "labels": [
-    "4K"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/桃乃木かな/IPZZ-597.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/ipzz-597",
   "updated_at": "2026-08-24"
 }

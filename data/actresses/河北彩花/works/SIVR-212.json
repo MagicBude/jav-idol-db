@@ -1,6 +1,6 @@
 {
   "code": "SIVR-212",
-  "title": "【VR】河北彩花とVRで同棲しようよ！·河北彩花",
+  "title": "【VR】河北彩花とVRで同棲しようよ！",
   "date": "2022-06-12",
   "actress": "河北彩花",
   "series": "SIVR",
@@ -8,12 +8,8 @@
   "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SIVR-212.jpg",
-  "segments": [
-    1,
-    2,
-    3
-  ],
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "segments": null,
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/sivr-212",
   "updated_at": "2026-08-24"
 }

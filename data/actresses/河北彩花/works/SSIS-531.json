@@ -1,18 +1,15 @@
 {
   "code": "SSIS-531",
-  "title": "人生初 絶頂、その向こう側へ 河北彩花·河北彩花",
+  "title": "人生初 絶頂、その向こう側へ 河北彩花",
   "date": "2022-09-23",
   "actress": "河北彩花",
   "series": "SSIS",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/SSIS-531.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/ssis-531",
   "updated_at": "2026-08-24"
 }

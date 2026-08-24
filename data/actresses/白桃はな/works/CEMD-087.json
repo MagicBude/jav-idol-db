@@ -5,13 +5,11 @@
   "actress": "白桃はな",
   "series": "CEMD",
   "maker": null,
-  "labels": [
-    "4KVP9"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/白桃はな/CEMD-087.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/cemd-087",
   "updated_at": "2026-08-24"
 }

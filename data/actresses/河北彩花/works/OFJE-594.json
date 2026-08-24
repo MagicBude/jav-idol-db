@@ -8,13 +8,8 @@
   "labels": [],
   "tags": [],
   "cover": "assets/img/河北彩花/OFJE-594.jpg",
-  "segments": [
-    1,
-    2,
-    3,
-    4
-  ],
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "segments": null,
+  "source": "pending",
+  "source_url": null,
   "updated_at": "2026-08-24"
 }

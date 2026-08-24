@@ -5,14 +5,11 @@
   "actress": "桃乃木かな",
   "series": "IPX",
   "maker": null,
-  "labels": [
-    "4K60fps",
-    "60fps"
-  ],
+  "labels": [],
   "tags": [],
   "cover": "assets/img/桃乃木かな/IPX-795.jpg",
   "segments": null,
-  "source": "migrated-from-prototype",
-  "source_url": "",
+  "source": "codeav",
+  "source_url": "https://www.codeav.net/movie/ipx-795",
   "updated_at": "2026-08-24"
 }
