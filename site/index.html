@@ -3,70 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>jav-idol-db · AV 女优与番号资料库</title>
-  <meta name="description" content="日本AV女优与番号元数据资料库 · 纯静态站点 · 数据来自 codeav 等公开源站" />
+  <title>JAV 女优作品情报库</title>
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
-<body data-page="index">
-  <!-- 全局顶栏 -->
-  <nav class="topbar">
-    <a class="logo" href="index.html">jav<span class="dot">·</span>idol<span class="dot">·</span>db</a>
-    <span class="nav-links">
-      <a href="https://github.com/MagicBude/jav-idol-db" target="_blank" rel="noopener">GitHub</a>
-    </span>
-  </nav>
-
-  <!-- Hero 搜索区 -->
-  <header class="hero">
-    <div class="hero-inner">
-      <h1 class="hero-title">jav-idol-db</h1>
-      <p class="hero-sub">AV 女优与番号元数据资料库</p>
-      <div class="hero-search">
-        <svg class="search-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input class="search" id="q" type="search" placeholder="搜女优名 / 番号 / 片名…" autofocus />
-      </div>
-      <div class="hero-stats">
-        <span class="stat-pill"><b id="stat-actresses">—</b> 位女优</span>
-        <span class="stat-pill"><b id="stat-works">—</b> 部作品</span>
-      </div>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#/">JAV<span class="dot">·</span>DB</a>
+    <div class="search">
+      <span class="ic">🔍</span>
+      <input id="search" type="text" placeholder="搜索番号 / 片名 / 女优 / 标签…" />
     </div>
   </header>
 
-  <!-- 主内容 -->
   <main class="wrap">
-    <!-- 女优 -->
-    <section class="section">
-      <div class="section-header">
-        <h2 class="section-title">女优一览</h2>
-        <span class="section-count" id="actress-count"></span>
-      </div>
-      <div class="grid actress-grid" id="actresses"></div>
-    </section>
-
-    <!-- 作品 -->
-    <section class="section">
-      <div class="section-header">
-        <h2 class="section-title">作品库</h2>
-        <span class="section-count" id="work-count"></span>
-      </div>
-      <div class="grid work-grid" id="works"></div>
-      <div class="load-more-wrap">
-        <button class="btn-load-more" id="load-more" type="button">加载更多 ↓</button>
-      </div>
-    </section>
-
-    <div class="empty" id="empty" style="display:none">没有匹配结果。</div>
+    <div id="app"><!-- 由 app.js 渲染 --></div>
   </main>
-
-  <!-- 页脚 -->
-  <footer class="footer">
-    <div class="footer-inner">
-      <span class="footer-brand">jav-idol-db</span>
-      <span class="footer-note">数据来自 codeav 等公开源站 · 仅供个人网盘文件整理与社区查阅</span>
-    </div>
-  </footer>
 
   <script src="assets/js/data.js"></script>
   <script src="assets/js/app.js"></script>
