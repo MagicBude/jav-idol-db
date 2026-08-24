@@ -17,7 +17,7 @@
 | `height` | int? | 身高（cm），未知为 `null` | `160` |
 | `measurements` | string? | 三围，如 `B95(C)/W58/H85`，未知为 `null` | `B95/W58/H85` |
 | `agency` | string? | 所属事务所，未知为 `null` | `T-POWERS` |
-| `avatar` | string? | 头像相对路径（入库到 `site/assets/img/<名>/avatar.jpg`） | `assets/img/桃乃木かな/avatar.jpg` |
+| `avatar` | string? | 头像网络 URL（**可选**；为空 `null` 时前端用姓名首字占位）。不本地化、不入库 | `https://.../avatar.jpg` 或 `null` |
 | `bio` | string | 简介（可空） | `""` |
 | `source` | string | 数据来源标识 | `codeav` / `seed` / `manual` |
 | `updated_at` | string | 最后更新日期 `YYYY-MM-DD` | `2026-08-24` |
@@ -38,15 +38,19 @@
 | `date` | string? | 发行日 `YYYY-MM-DD`（FANZA 实体/DVD 发行日），未知为 `null` | `2014-09-19` |
 | `actress` | string | 女优名（与 profile.name 对应） | `桃乃木かな` |
 | `series` | string? | 系列名（真实系列，非番号前缀） | `噂の本番できちゃうおっパブ店` |
-| `maker` | string? | 厂商 / Studio | `アイデアポケット` |
+| `maker` | string? | 厂商 / Studio（codeav 优先，多源补全更完整者） | `アイデアポケット` |
 | `label` | string? | 厂牌 / Label | `ティッシュ` |
+| `publisher` | string? | 发行商（可选，多源补全时填入） | `MOODYZ DIVA` |
 | `duration` | int? | 时长（分钟），未知为 `null` | `119` |
+| `director` | string? | 导演（可选，多源补全时填入） | `宝瀬博教` |
+| `trailer` | string? | 预告片 URL（可选） | `https://.../sample.mp4` |
 | `labels` | string[] | 标签（兼容字段，可后续从 label 派生） | `[]` |
-| `tags` | string[] | 类型标签（从 codeav /genre/ 链接提取，去重去噪） | `["巨乳", "美少女", "単体作品"]` |
+| `tags` | string[] | 类型标签（codeav `/genre/` 与多源补全并集，去重去噪） | `["巨乳", "美少女", "単体作品"]` |
 | `synopsis` | string? | 剧情简介 / Blurb | `【都内某所にある…】リピーター続出！…` |
 | `rating` | float? | 评分（如 4.5），未知为 `null` | `4.5` |
 | `rating_count` | int? | 评价数，未知为 `null` | `56` |
-| `cover` | string? | 封面图 URL 或相对路径 | `https://awsimgsrc.dmm.co.jp/...ipx00005pl.jpg` |
+| `external_links` | object? | 外链（多源补全导入：`DMM` / `JAVDB`） | `{"DMM": "https://video.dmm.co.jp/...", "JAVDB": "https://javdb.com/search?q=IPX-005"}` |
+| `cover` | string? | 封面图**网络 URL**（DMM / 外部 CDN 热链，**不本地化**）；缺失为 `null`，前端占位兜底 | `https://awsimgsrc.dmm.co.jp/pics_dig/digital/video/ipx005/ipx005pl.jpg` |
 | `segments` | int? | 分卷数（多 part 时），单文件为 `null` | `3` |
 | `source` | string | 数据来源标识 | `codeav` / `115-rename-plan` / `seed` |
 | `source_url` | string? | 来源页 URL，便于复核 / 补抓 | `https://www.codeav.net/movie/ipx-005` |
@@ -66,7 +70,7 @@
     {
       "name": "桃乃木かな",
       "aliases": ["Momonogi Kana"],
-      "avatar": "data/images/桃乃木かな/avatar.jpg",
+      "avatar": null,
       "work_count": 3,
       "codes": ["IPX-005", "SAMPLE-264"],
       "works": [ { "<作品字段...>" }, ... ]
