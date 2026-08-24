@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+.pytest_cache/
+
+# 本地临时 / 输出
+.DS_Store
+*.log
+temp/
+scratch/
+
+# 密钥 / 环境变量
+.env
+
+# 大文件（封面图按需入库，单文件勿超 100MB）
+# data/images/**/*.jpg 默认入库；如想忽略本地未处理图可在此加规则

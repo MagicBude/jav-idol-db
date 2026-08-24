@@ -1,0 +1,90 @@
+/* jav-idol-db 站点样式 —— 简洁、搜索优先，参考 codeav 的干净风格 */
+:root {
+  --bg: #f7f8fa;
+  --card: #ffffff;
+  --text: #1f2329;
+  --muted: #8a919f;
+  --line: #e6e8eb;
+  --accent: #e8554e;       /* 主色：克制的红 */
+  --accent-soft: #fdecea;
+  --radius: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.04);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+a { color: inherit; text-decoration: none; }
+
+.wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+
+/* 顶栏 */
+.topbar {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 16px; border-bottom: 1px solid var(--line);
+  background: var(--card); position: sticky; top: 0; z-index: 10;
+}
+.topbar .logo { font-weight: 800; font-size: 18px; letter-spacing: .5px; }
+.topbar .logo .dot { color: var(--accent); }
+.topbar .count { color: var(--muted); font-size: 13px; }
+.topbar .home { margin-left: auto; color: var(--muted); font-size: 14px; }
+
+/* 搜索 */
+.search {
+  width: 100%; padding: 14px 16px; font-size: 16px;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); outline: none; box-shadow: var(--shadow);
+}
+.search:focus { border-color: var(--accent); }
+
+/* 区块标题 */
+.section-title {
+  margin: 28px 0 12px; font-size: 14px; font-weight: 700;
+  color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* 网格 */
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.grid.wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+/* 卡片 */
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow); transition: transform .12s ease, box-shadow .12s ease;
+}
+.card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.08), 0 12px 28px rgba(0,0,0,.06); }
+.card .thumb {
+  aspect-ratio: 2 / 3; background: #eceef1 center/cover no-repeat;
+  display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px;
+}
+.card .thumb.square { aspect-ratio: 1 / 1; }
+.card .body { padding: 10px 12px; }
+.card .name { font-weight: 700; font-size: 14px; }
+.card .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+/* 标签 */
+.tag {
+  display: inline-block; font-size: 11px; padding: 2px 8px; margin: 3px 4px 0 0;
+  background: var(--accent-soft); color: var(--accent); border-radius: 999px;
+}
+
+/* 详情页 */
+.detail-head { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+.detail-head .poster {
+  width: 200px; height: 300px; border-radius: var(--radius); background: #eceef1 center/cover no-repeat;
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: var(--muted);
+}
+.detail-head .meta { flex: 1 1 320px; }
+.detail-head h1 { margin: 0 0 6px; font-size: 22px; }
+.detail-head .row { color: var(--muted); font-size: 14px; margin: 4px 0; }
+.detail-head .row b { color: var(--text); font-weight: 600; }
+
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+.muted { color: var(--muted); font-size: 13px; }
+.back { color: var(--muted); font-size: 14px; display: inline-block; margin-bottom: 12px; }
