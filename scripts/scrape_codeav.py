@@ -47,13 +47,14 @@ def fetch_html(url, timeout=20):
 
 
 def canon_code(code):
-    """把各种写法归一为标准番号：大写、去前导零、单横线。
-    例：ipx-005 -> IPX-005；1stars00145 -> STARS-145；STARS-00145 -> STARS-145。"""
+    """把各种写法归一为标准番号：大写、去首尾空白、统一连字符。
+
+    重要：番号的数字位数由各厂牌约定（IPX-005 是 005，SNOS-3 是 3，
+    FC2-PPV-xxxx 是 7 位），本函数**不改动数字位数**——否则会把
+    SNOS-3 误补成 SNOS-003，写文件时分叉出孤儿、原文件残留 migrated。
+    归一只做：大写 + 去空白 + 连字符统一。"""
     code = code.strip().upper()
-    m = re.match(r"^([A-Z]+)-0*(\d+)$", code)
-    if m:
-        return f"{m.group(1)}-{int(m.group(2)):03d}"
-    # 纯数字或特殊码（如 SAMPLE-264 / FC2-PPV-xxxx）保持原样
+    code = re.sub(r"[\s_]+", "-", code)
     return code
 
 
@@ -87,7 +88,7 @@ def parse_movie_page(html):
     return title, released, actress
 
 
-def scrape_work(code, actress_hint=None):
+def scrape_work(code, actress_hint=None, original_cover=None):
     """抓单个番号，返回 work dict（字段见 docs/schema.md）。"""
     std = canon_code(code)
     url = f"https://www.codeav.net/movie/{std.lower()}"
@@ -98,8 +99,9 @@ def scrape_work(code, actress_hint=None):
     if html:
         title, released, actress = parse_movie_page(html)
 
-    # 女优：解析不到则用命令行 --actress 提示
-    if not actress and actress_hint:
+    # 女优：命令行 --actress 提示优先（按我们归档的女优名，归属最准）；
+    # 未提供 hint 时才退用 codeav 解析值（对总集编/误归有一定纠正力）。
+    if actress_hint:
         actress = actress_hint
 
     work = {
@@ -111,7 +113,7 @@ def scrape_work(code, actress_hint=None):
         "maker": None,
         "labels": [],
         "tags": [],
-        "cover": None,
+        "cover": original_cover or None,
         "segments": None,
         "source": "codeav" if html else "pending",
         "source_url": url if html else None,
