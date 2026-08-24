@@ -37,11 +37,16 @@
 | `title` | string | 真实日文片名；未抓到为 `""` | `問題児クラスを…フェラテクニック` |
 | `date` | string? | 发行日 `YYYY-MM-DD`（FANZA 实体/DVD 发行日），未知为 `null` | `2014-09-19` |
 | `actress` | string | 女优名（与 profile.name 对应） | `桃乃木かな` |
-| `series` | string? | 系列名 | `IPX` |
-| `maker` | string? | 片商 | `IDEA POCKET` |
-| `labels` | string[] | 标签（如 `単体作品` / `擅长角色`） | `["単体作品"]` |
-| `tags` | string[] | 抓取源自带的类型标签（如 `4K` / `VR`） | `["VR"]` |
-| `cover` | string? | 封面图相对路径（入库到 `site/assets/img/<名>/<番号>.jpg`） | `assets/img/桃乃木かな/IPX-005.jpg` |
+| `series` | string? | 系列名（真实系列，非番号前缀） | `噂の本番できちゃうおっパブ店` |
+| `maker` | string? | 厂商 / Studio | `アイデアポケット` |
+| `label` | string? | 厂牌 / Label | `ティッシュ` |
+| `duration` | int? | 时长（分钟），未知为 `null` | `119` |
+| `labels` | string[] | 标签（兼容字段，可后续从 label 派生） | `[]` |
+| `tags` | string[] | 类型标签（从 codeav /genre/ 链接提取，去重去噪） | `["巨乳", "美少女", "単体作品"]` |
+| `synopsis` | string? | 剧情简介 / Blurb | `【都内某所にある…】リピーター続出！…` |
+| `rating` | float? | 评分（如 4.5），未知为 `null` | `4.5` |
+| `rating_count` | int? | 评价数，未知为 `null` | `56` |
+| `cover` | string? | 封面图 URL 或相对路径 | `https://awsimgsrc.dmm.co.jp/...ipx00005pl.jpg` |
 | `segments` | int? | 分卷数（多 part 时），单文件为 `null` | `3` |
 | `source` | string | 数据来源标识 | `codeav` / `115-rename-plan` / `seed` |
 | `source_url` | string? | 来源页 URL，便于复核 / 补抓 | `https://www.codeav.net/movie/ipx-005` |
