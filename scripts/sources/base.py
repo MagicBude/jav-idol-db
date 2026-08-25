@@ -60,6 +60,20 @@ def clean(text):
     return re.sub(r"\s+", " ", str(text)).strip()
 
 
+def upgrade_cover_url(url):
+    """把 DMM 降分辨率图床换成标准高清源。
+
+    - awsimgsrc.dmm.co.jp/pics_dig/... 是 DMM 的「优化/降级」图床（常返回压缩图），
+      标准高清源是 pics.dmm.co.jp/...（路径少了 pics_dig 一段）。
+    - 顺带把小图 ps.jpg 升到高清 pl.jpg。
+    其余域名原样返回。"""
+    if not url:
+        return url
+    u = url.replace("awsimgsrc.dmm.co.jp/pics_dig/", "pics.dmm.co.jp/")
+    u = re.sub(r"(\w+)ps\.jpg$", r"\1pl.jpg", u)
+    return u
+
+
 def launch_chrome(no_proxy=None):
     """启动系统 Chrome（channel='chrome'），返回 (playwright, browser)。
     不下载 chromium，直接用已安装的 Chrome。
@@ -230,3 +244,29 @@ def attribution_conflict(dir_actress, fetched_actresses):
         return True, fetched_actresses[0]
     # 多人作品：目录名不在其中，可能是该女优缺席 -> 冲突（建议保留多人归属需人工）
     return True, None
+
+
+# ---------------------------------------------------------------------------
+# 女优名归一化（去括号别名、统一已知变体读法）
+# 用于跨源/目录名一致性比对，避免因「河北彩花（河北彩伽）」「永野いち夏」等写法
+# 差异导致的误判。
+# ---------------------------------------------------------------------------
+_NAME_VARIANTS = {
+    "永野いち夏": "永野一夏",   # いち夏 = 一夏 假名读法
+    "永野一夏": "永野一夏",
+    "河北彩花": "河北彩花",
+    "河北彩伽": "河北彩花",
+    "白桃はな": "白桃はな",
+    "桃乃木かな": "桃乃木かな",
+    "石川澪": "石川澪",
+}
+
+def normalize_name(n):
+    """女优名归一化：去括号别名 + 已知变体映射。"""
+    if not n:
+        return ""
+    s = n.strip()
+    for sep in ("（", "("):
+        if sep in s:
+            s = s.split(sep)[0].strip()
+    return _NAME_VARIANTS.get(s, s)

@@ -5,7 +5,7 @@ codeav.net Fetcher —— 主源（FANZA/DMM 元数据镜像，静态页，urlli
 import re
 import json
 import urllib.request
-from .base import Fetcher, canon_code, clean, UA
+from .base import Fetcher, canon_code, clean, UA, upgrade_cover_url
 
 
 class CodeavFetcher(Fetcher):
@@ -35,13 +35,22 @@ class CodeavFetcher(Fetcher):
         m = re.search(r'"datePublished"\s*:\s*"(\d{4}-\d{2}-\d{2})"', html)
         result["date"] = m.group(1) if m else None
 
-        # 女优：优先 JSON-LD 的 actor[].name（codeav 用数组形式）
+        # 女优：只用 JSON-LD 的 actor 主演字段（codeav 对本片唯一可靠的女优信号）。
+        # 注意：页面上的 /actress/ <li> 列表与 avatar 头像卡片都是全站统一的
+        # 「相关/人气女优」挂件（几乎每个影片都一致），绝不能当作本片卡司。
         m = re.search(r'"actor"\s*:\s*\[\s*\{\s*"@type"\s*:\s*"Person"\s*,\s*"name"\s*:\s*"([^"]+)', html)
         if not m:
             m = re.search(r'"actor"\s*:\s*\{\s*"@type"\s*:\s*"Person"\s*,\s*"name"\s*:\s*"([^"]+)', html)
         if not m:
             m = re.search(r'"actor"\s*:\s*\[?\s*\{?\s*"name"\s*:\s*"([^"]+)', html)
         actress = clean(m.group(1)) if m else ""
+        actress_url = ""
+        # 从 JSON-LD actor[].url 精确拿到女优详情页 slug（最可靠）
+        m2 = re.search(r'"actor"\s*:\s*\[?\s*\{[^}]*"name"\s*:\s*"([^"]+)"[^}]*"url"\s*:\s*"([^"]+)"', html)
+        if m2:
+            if clean(m2.group(1)) == actress or not actress:
+                actress = clean(m2.group(1))
+                actress_url = m2.group(2)
         # 兜底：指向具体女优详情页 /actress/（单数）的链接文字；
         # 排除导航占位「女優 / もっと見る / フィルモグラフィー」等。
         if not actress or actress == "女優":
@@ -52,6 +61,7 @@ class CodeavFetcher(Fetcher):
                     actress = t
         result["actress"] = actress
         result["actresses"] = [actress] if actress else []
+        result["actress_url"] = actress_url
 
         # 厂商 maker
         m = re.search(r'"productionCompany"\s*:\s*\{\s*"@type"\s*:\s*"Organization"\s*,\s*"name"\s*:\s*"([^"]+)"', html)
@@ -105,7 +115,7 @@ class CodeavFetcher(Fetcher):
         m = re.search(r'<meta\s+property="og:image"\s+content="([^"]+)"', html, re.I)
         if not m:
             m = re.search(r'"image"\s*:\s*"([^"]+)"', html)
-        result["cover"] = clean(m.group(1)) if m else None
+        result["cover"] = upgrade_cover_url(clean(m.group(1))) if m else None
 
         # 导演 director（codeav 偶发有）
         m = re.search(r'"director"\s*:\s*\{\s*"@type"\s*:\s*"Person"\s*,\s*"name"\s*:\s*"([^"]+)"', html)
