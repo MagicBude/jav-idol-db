@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>JAV 查询台</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">▦</span>
+    <div>
+      <h1>JAV 查询台</h1>
+      <p class="sub">通用元数据查询 · codeav / javbus / javdb / fanza</p>
+    </div>
+  </div>
+  <div id="sources" class="sources"></div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-mode="code">作品（番号）</button>
+  <button class="tab" data-mode="actress">女优</button>
+  <button class="tab" data-mode="search">搜索</button>
+</nav>
+
+<section class="searchbar">
+  <input id="q" type="text" autocomplete="off" placeholder="输入番号，如 STARS-145" />
+  <select id="source">
+    <option value="codeav">codeav（沙箱可用）</option>
+    <option value="all">全部源（并发合并）</option>
+    <option value="javbus">javbus</option>
+    <option value="javdb">javdb</option>
+    <option value="fanza">fanza</option>
+  </select>
+  <button id="go">查询</button>
+  <label class="json-toggle"><input type="checkbox" id="json" /> JSON</label>
+</section>
+
+<main id="result" class="result">
+  <div class="hint">输入番号 / 女优名 / 关键词开始查询。</div>
+</main>
+
+<footer class="foot">
+  本地工具 · 数据源均为公开页面抓取 · 封面热链自各站 CDN
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -10,16 +10,20 @@ jav —— 通用 JAV 信息查询工具（CLI）
 
 子命令
 ------
-  jav code    <番号>           查单部作品详情
+  jav code    <番号>           查单部作品详情（多源）
   jav actress <女优名|slug>    查女优：标准名 + 头像 + 全部作品(番号→标题)
   jav search  <关键词>         codeav 搜索：作品 + 女优
   jav normalize <名字>         把女优名/番号归一化（仅本地，不联网）
 
 通用选项
-  --json        输出机器可读 JSON（便于管道 / 115 改名脚本消费）
-  --source S    数据源（默认 codeav；架构预留 javbus/javdb/fanza，需本机宽网络）
+  --json        输出机器可读 JSON（便于管道 / 改名脚本消费）
+  --source S    数据源：codeav|javbus|javdb|fanza|all（默认 codeav；逗号分隔可多源）
   --no-cache    不使用/不写入本地缓存
   -h            帮助
+
+数据源说明
+  codeav  沙箱直连可用；javbus/javdb/fanza 需本机宽网络 + Playwright（沙箱会优雅降级）。
+  --source all 会并发查全部源并合并（codeav 优先，其余补缺）。
 
 示例
   python tools/jav.py code STARS-145
@@ -38,6 +42,23 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 from sources.base import UA, canon_code, normalize_name, clean  # noqa: E402
+from sources import (  # noqa: E402  (websearch 等仅依赖 urllib，沙箱可安全导入)
+    CodeavFetcher, JavbusFetcher, JavdbFetcher, FanzaFetcher,
+)
+
+# 数据源注册表：codeav 用 urllib 直连（沙箱可达）；其余需本机宽网络 + Playwright。
+SOURCES = {
+    "codeav": CodeavFetcher,
+    "javbus": JavbusFetcher,
+    "javdb": JavdbFetcher,
+    "fanza": FanzaFetcher,
+}
+SOURCE_DESC = {
+    "codeav": "CodeAV（DMM 镜像，urllib 直连，沙箱可达）",
+    "javbus": "JavBus（需本机宽网络 + Playwright）",
+    "javdb": "JavDB（需本机宽网络 + Playwright）",
+    "fanza": "FANZA/DMM 官方（需本机宽网络 + Playwright）",
+}
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
 ZH_PATH = os.path.join(ROOT, "data", "zh.json")
@@ -112,20 +133,112 @@ def zh_actress(name):
 
 
 # --------------------------------------------------------------------------
-# 数据源：codeav（直接复用现有 Fetcher）
+# 数据源调度（通用）：多源并发查单部作品，按优先级合并
 # --------------------------------------------------------------------------
+import threading  # noqa: E402
+import socket  # noqa: E402
+
+# 各源用于「离线/沙箱预检」的主机（443）。不可达则直接降级，不拉起浏览器。
+_SOURCE_HOST = {
+    "codeav": "www.codeav.net",
+    "javbus": "www.javbus.com",
+    "javdb": "javdb.com",
+    "fanza": "www.fanza.co.jp",
+}
+
+
+def _reachable(host, port=443, timeout=4):
+    """快速 TCP 可达性预检：避免离线/沙箱时拉起 Playwright 卡死或崩进程。"""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except Exception:
+        return False
+
+
+def _one_source(name, code):
+    """单源抓取；异常/未命中/不可达统一为 (name, result|None)。"""
+    try:
+        host = _SOURCE_HOST.get(name)
+        if host and not _reachable(host):
+            return name, {"_error": "网络不可达（需本机宽网络 + Playwright）"}
+        r = SOURCES[name]().fetch(code)
+        if r and (r.get("title") or r.get("actresses")):
+            return name, r
+        return name, None
+    except Exception as e:  # 无 Playwright / 网络不可达等 → 优雅降级
+        return name, {"_error": str(e)[:200]}
+
+
+def fetch_product(code, sources=None, timeout=45):
+    """多源查单部作品。
+
+    sources: 列表，如 ["codeav"] / ["javbus","javdb"] / ["all"]。
+             默认 ["codeav"]（沙箱唯一可达源）。
+    返回 (merged, per_source)：
+      merged      —— 合并后的标准化 dict（含 actress_zh、_sources 状态），未命中为 None
+      per_source  —— {源名: {"ok":bool, "data"|"error":...}}
+    用守护线程并发，避免单个源卡死拖垮整个进程。
+    """
+    if sources is None:
+        sources = ["codeav"]
+    if sources in (["all"], "all"):
+        sources = list(SOURCES.keys())
+    sources = [s for s in sources if s in SOURCES]
+    if not sources:
+        sources = ["codeav"]
+
+    results = {}
+    lock = threading.Lock()
+
+    def worker(name):
+        _n, res = _one_source(name, code)
+        with lock:
+            results[name] = res
+
+    threads = [threading.Thread(target=worker, args=(n,), daemon=True) for n in sources]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join(timeout)
+
+    per_source = {}
+    for n in sources:
+        res = results.get(n)
+        if res is None:  # 超时未返回
+            per_source[n] = {"ok": False, "error": "超时"}
+        elif isinstance(res, dict) and res.get("_error"):
+            per_source[n] = {"ok": False, "error": res["_error"]}
+        elif res:
+            per_source[n] = {"ok": True, "data": res}
+        else:
+            per_source[n] = {"ok": False, "error": "未命中"}
+
+    # 合并：首个成功源作底，其余用 merge_work 只填空缺字段
+    merged = None
+    for n in sources:
+        st = per_source.get(n)
+        if st and st.get("ok"):
+            if merged is None:
+                merged = dict(st["data"])
+            else:
+                from sources.base import merge_work
+                merge_work(merged, st["data"])
+
+    if merged:
+        a = merged.get("actress")
+        if a:
+            z = zh_actress(a)
+            if z:
+                merged["actress_zh"] = z
+        merged["_sources"] = {n: ("ok" if per_source.get(n, {}).get("ok") else "fail") for n in sources}
+    return merged, per_source
+
+
 def codeav_product(code):
-    """查单部作品，返回标准化 dict（含 zh 女优名）。"""
-    from sources.codeav import CodeavFetcher
-    r = CodeavFetcher().fetch(code)
-    if not r:
-        return None
-    a = r.get("actress")
-    if a:
-        z = zh_actress(a)
-        if z:
-            r["actress_zh"] = z
-    return r
+    """查单部作品（codeav 源）。保留给 rename_map 等下游兼容。"""
+    merged, _ = fetch_product(code, ["codeav"])
+    return merged
 
 
 # --------------------------------------------------------------------------
@@ -317,6 +430,8 @@ def main():
 
     p_code = sub.add_parser("code", help="查单部作品", parents=[common])
     p_code.add_argument("code", help="番号，如 STARS-145")
+    p_code.add_argument("--source", default="codeav",
+                        help="数据源: codeav|javbus|javdb|fanza|all (逗号分隔多源)")
 
     p_act = sub.add_parser("actress", help="查女优作品", parents=[common])
     p_act.add_argument("name", help="女优名或 slug(n-xxx)")
@@ -332,11 +447,20 @@ def main():
 
     try:
         if args.cmd == "code":
-            r = codeav_product(args.code)
-            if not r:
+            sources = [s.strip() for s in args.source.split(",") if s.strip()]
+            merged, results = fetch_product(args.code, sources)
+            if not merged:
                 print(f"未找到：{args.code}", file=sys.stderr)
                 sys.exit(1)
-            out(r, args.json)
+            if args.json:
+                out(merged, True)
+            else:
+                _pretty(merged)
+                print("-" * 60)
+                for n, st in results.items():
+                    tag = "✓" if st.get("ok") else "✗"
+                    extra = "" if st.get("ok") else f"  ({st.get('error')})"
+                    print(f"源 {n:8s}: {tag}{extra}")
         elif args.cmd == "actress":
             r = codeav_actress(args.name)
             if not r:
