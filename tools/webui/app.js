@@ -53,14 +53,36 @@
     $("#result").innerHTML = `<div class="loader">查询中…</div>`;
   }
 
-  // ---- 渲染：作品 ----
-  function renderCode(d) {
+  // ---- 渲染：作品（多源聚合对比） ----
+  // 核心卖点：一次查 4 站，合并结果 + 高亮各源差异，这是单站 codeav 做不到的。
+  function fieldVal(src, f) {
+    const v = src[f];
+    if (f === "actresses") return Array.isArray(v) && v.length ? v.join("、") : (src.actress || "");
+    if (Array.isArray(v)) return v.join("、");
+    return v == null ? "" : String(v);
+  }
+
+  function renderCompare(d) {
+    const per = d.sources || {};
+    const names = Object.keys(per);
+    const okNames = names.filter((n) => per[n].ok && per[n].data);
+    const failNames = names.filter((n) => !per[n].ok);
+
+    // 顶部：各源状态卡（命中显示封面缩略图，未命中显示原因）
+    const cards = names.map((n) => {
+      const s = per[n];
+      if (s.ok && s.data) {
+        return `<div class="srccard ok"><div class="srch">${esc(n)} <span class="tick">✓</span></div>${cover(s.data.cover, "thumb")}</div>`;
+      }
+      const err = s.error || "";
+      const reason = err.includes("不可达") ? "需本机宽网络" : err.includes("超时") ? "超时" : (err || "未命中");
+      return `<div class="srccard fail"><div class="srch">${esc(n)} <span class="cross">✗</span></div><div class="srcreason">${esc(reason)}</div></div>`;
+    }).join("");
+
+    // 合并后的主卡（取最佳值）
     const a = d.actress || "";
     const az = d.actress_zh ? `<span class="actress-zh">（${esc(d.actress_zh)}）</span>` : "";
-    const srcStat = (d._sources && Object.entries(d._sources)
-      .map(([n, s]) => `<span class="${s === "ok" ? "ok" : "fail"}">${esc(n)}: ${s === "ok" ? "✓" : "✗"}</span>`)
-      .join("")) || "";
-    const html = `
+    const hero = `
       <div class="card">
         ${cover(d.cover)}
         <div class="meta">
@@ -74,13 +96,37 @@
             <div class="k">系列</div><div class="v">${esc(d.series)}</div>
             <div class="k">时长</div><div class="v">${d.duration ? d.duration + " 分" : ""}</div>
             <div class="k">评分</div><div class="v">${d.rating != null ? d.rating + (d.rating_count ? `（${d.rating_count} 票）` : "") : ""}</div>
-            <div class="k">链接</div><div class="v">${d.source_url ? `<a class="link" href="${esc(d.source_url)}" target="_blank" rel="noopener">${esc(d.source_url)}</a>` : ""}</div>
           </div>
           ${tags(d.tags)}
-          ${srcStat ? `<div class="srcstat">${srcStat}</div>` : ""}
+          <div class="srcstat">命中源：${okNames.map((n) => `<span class="ok">${esc(n)}</span>`).join(" ")}${failNames.length ? " · 未命中：" + failNames.map((n) => `<span class="fail">${esc(n)}</span>`).join(" ") : ""}</div>
         </div>
       </div>`;
-    $("#result").innerHTML = html;
+
+    // 各源差异对照表
+    const fields = [["title", "标题"], ["actresses", "女优"], ["maker", "厂商"], ["date", "日期"], ["series", "系列"]];
+    let diffTable = "";
+    if (okNames.length > 1) {
+      const rows = fields.map(([f, label]) => {
+        const vals = okNames.map((n) => fieldVal(per[n].data, f));
+        const distinct = new Set(vals.map((v) => JSON.stringify(v))).size;
+        const conflict = distinct > 1;
+        return `<tr class="${conflict ? "conflict" : ""}"><td class="fld">${label}</td>${vals.map((v) => `<td>${esc(v) || '<span class="muted">—</span>'}</td>`).join("")}</tr>`;
+      }).join("");
+      diffTable = `
+        <div class="section-title">各源对照（<span class="conflict-mark">红框=各源不一致</span>）</div>
+        <table class="diff">
+          <tr><th class="fld">字段</th>${okNames.map((n) => `<th>${esc(n)}</th>`).join("")}</tr>
+          ${rows}
+        </table>`;
+    } else if (okNames.length === 1) {
+      diffTable = `<div class="hint">仅 ${esc(okNames[0])} 命中，无其他源可对照（本机跑时 javbus/javdb/fanza 会一并返回）。</div>`;
+    }
+
+    const unreachableNote = failNames.length
+      ? `<div class="hint">提示：${failNames.join("、")} 在当前环境不可达（沙箱仅放行 codeav）。在你本机用 Playwright 跑时它们会实际抓取并参与合并。</div>`
+      : "";
+
+    $("#result").innerHTML = hero + `<div class="srccards">${cards}</div>` + diffTable + unreachableNote;
   }
 
   // ---- 渲染：女优 ----
@@ -139,7 +185,7 @@
       data = await r.json();
       if (asJson) { showJSON(data); return; }
       if (!data.ok) { showError(data.error || "未命中"); return; }
-      if (mode === "code") renderCode(data);
+      if (mode === "code") renderCompare(data);
       else if (mode === "actress") renderActress(data);
       else renderSearch(data);
     } catch (e) {

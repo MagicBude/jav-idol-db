@@ -118,5 +118,27 @@ a.link:hover { text-decoration: underline; }
 .result-cols { display: grid; grid-template-columns: 1fr; gap: 18px; }
 .section-title { font-size: 15px; color: var(--txt2); margin: 4px 0 10px; border-left: 3px solid var(--accent); padding-left: 10px; }
 
+/* 多源状态卡 */
+.srccards { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0; }
+.srccard { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; width: 122px; text-align: center; box-sizing: border-box; }
+.srccard.ok { border-color: rgba(70,211,154,.4); }
+.srccard.fail { border-color: rgba(255,107,107,.35); opacity: .85; }
+.srccard .srch { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.srccard .tick { color: var(--ok); }
+.srccard .cross { color: var(--fail); }
+.srccard .srcreason { font-size: 11px; color: var(--txt2); }
+.cover.thumb { width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 6px; background: var(--bg3); display: block; }
+.cover.broken.thumb { aspect-ratio: 2/3; display: grid; place-items: center; color: var(--txt2); font-size: 11px; border-radius: 6px; }
+
+/* 各源对照表 */
+.diff { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 13px; }
+.diff th, .diff td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+.diff th { background: var(--bg3); color: var(--txt2); font-weight: 600; }
+.diff .fld { color: var(--txt2); width: 80px; white-space: nowrap; }
+.diff tr.conflict td { background: rgba(255,107,107,.08); }
+.diff tr.conflict .fld { color: var(--fail); font-weight: 600; }
+.conflict-mark { color: var(--fail); font-size: 12px; }
+.muted { color: var(--txt2); }
+
 pre.json { background: var(--bg2); border: 1px solid var(--line); border-radius: 10px; padding: 16px; overflow: auto; font-size: 13px; color: var(--txt2); }
 .foot { text-align: center; color: var(--txt2); font-size: 12px; padding: 20px; border-top: 1px solid var(--line); }
