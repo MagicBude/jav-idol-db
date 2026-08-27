@@ -64,8 +64,13 @@
       .replace(/&/g, "&amp;").replace(/</g, "&lt;")
       .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  function bg(url) {
-    return url ? ' style="background-image:url(\'' + esc(url) + '\')"' : "";
+  /** 生成 <img> 封面标签（替代 background-image，可加 referrerpolicy / onerror） */
+  function imgTag(url, alt, cls) {
+    if (!url) return "";
+    return '<img src="' + esc(url) + '" alt="' + esc(alt || "") + '" ' +
+      'loading="lazy" referrerpolicy="no-referrer" ' +
+      'onerror="this.style.display=\'none\'" ' +
+      (cls ? 'class="' + cls + '"' : '') + '>';
   }
   function $(id) { return document.getElementById(id); }
 
@@ -97,12 +102,12 @@
   /* ---- 作品卡片 ---- */
   function workCard(rec) {
     var w = rec.w;
-    var cover = bg(w.cover);
     var rating = w.rating ? '<span class="badge">★ ' + w.rating + "</span>" : "";
     var title = w.title ? esc(w.title) : "（片名待抓取）";
     return (
       '<a class="card" href="#/w/' + enc(w.code) + '">' +
-        '<div class="thumb"' + cover + ">" +
+        '<div class="thumb">' +
+          imgTag(w.cover, w.code, "cover-img") +
           (w.cover ? "" : '<span class="ph">' + esc(w.code) + "</span>") +
           rating +
         "</div>" +
@@ -117,10 +122,10 @@
 
   /* ---- 女优卡片 ---- */
   function actressCard(a) {
-    var cover = bg(a.avatar);
     return (
       '<a class="card actress" href="#/a/' + enc(a.name) + '">' +
-        '<div class="thumb portrait"' + cover + ">" +
+        '<div class="thumb portrait">' +
+          imgTag(a.avatar, a.name, "cover-img") +
           (a.avatar ? "" : '<span class="ph">' + esc(a.name) + "</span>") +
         "</div>" +
         '<div class="body"><div class="name">' + esc(actressName(a.name)) + "</div>" +
@@ -199,7 +204,7 @@
     return (
       '<div class="crumb"><a href="#/">首页</a> / 女优 / <b>' + esc(a.name) + "</b></div>" +
       '<div class="profile">' +
-        '<div class="avatar"' + bg(a.avatar) + ">" + (a.avatar ? "" : esc(actressName(a.name))) + "</div>" +
+        '<div class="avatar">' + imgTag(a.avatar, a.name) + (a.avatar ? "" : esc(actressName(a.name))) + "</div>" +
         "<div class=\"pinfo\">" +
           "<h1>" + esc(actressName(a.name)) + "</h1>" +
           (a.aliases && a.aliases.length ? '<div class="row">别名：' + a.aliases.map(esc).join("、") + "</div>" : "") +
@@ -250,7 +255,7 @@
       '<div class="crumb"><a href="#/">首页</a> / <a href="#/a/' + enc(rec.owner || "") + '">' +
         esc(actressName(rec.owner || "未知")) + "</a> / <b>" + esc(w.code) + "</b></div>" +
       '<div class="detail">' +
-        '<div class="poster"' + bg(w.cover) + ">" + (w.cover ? "" : esc(w.code)) + "</div>" +
+        '<div class="poster">' + imgTag(w.cover, w.code) + (w.cover ? "" : esc(w.code)) + "</div>" +
         "<div class=\"dinfo\">" +
           "<h1>" + (w.title ? esc(w.title) : esc(w.code)) + "</h1>" +
           '<div class="code">' + esc(w.code) + "</div>" +
