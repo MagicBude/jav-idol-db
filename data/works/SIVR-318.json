@@ -1,25 +1,25 @@
 {
- "code": "SIVR-318",
- "source": "javbus",
- "source_url": "https://www.javbus.com/SIVR-318",
- "title": null,
- "date": "2024-02-04",
- "actress": "楓ふうあ",
- "actresses": [
-  "楓ふうあ"
- ],
- "maker": "S1 No.1 Style",
- "label": null,
- "series": "SIVR",
- "duration": null,
- "tags": [],
- "synopsis": null,
- "rating": null,
- "rating_count": null,
- "cover": null,
- "director": "イナバール",
- "_sources": {
-  "javbus": "ok"
- },
- "updated_at": "2026-08-27T02:59:23Z"
+  "code": "SIVR-318",
+  "source": "javbus",
+  "source_url": "https://www.javbus.com/SIVR-318",
+  "title": null,
+  "date": "2024-02-04",
+  "actress": "楓ふうあ",
+  "actresses": [
+    "楓ふうあ"
+  ],
+  "maker": "S1 No.1 Style",
+  "label": null,
+  "series": "SIVR",
+  "duration": null,
+  "tags": [],
+  "synopsis": null,
+  "rating": null,
+  "rating_count": null,
+  "cover": "https://pics.dmm.co.jp/digital/video/sivr00318/sivr00318pl.jpg",
+  "director": "イナバール",
+  "_sources": {
+    "javbus": "ok"
+  },
+  "updated_at": "2026-08-27T02:59:23Z"
 }

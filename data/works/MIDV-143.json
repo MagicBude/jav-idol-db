@@ -1,25 +1,25 @@
 {
- "code": "MIDV-143",
- "source": "javbus",
- "source_url": "https://www.javbus.com/MIDV-143",
- "title": null,
- "date": "2022-07-01",
- "actress": "八木奈々",
- "actresses": [
-  "八木奈々"
- ],
- "maker": "ムーディーズ",
- "label": "MOODYZ DIVA",
- "series": null,
- "duration": null,
- "tags": [],
- "synopsis": null,
- "rating": null,
- "rating_count": null,
- "cover": null,
- "director": "トレンディ山口",
- "_sources": {
-  "javbus": "ok"
- },
- "updated_at": "2026-08-27T02:59:23Z"
+  "code": "MIDV-143",
+  "source": "javbus",
+  "source_url": "https://www.javbus.com/MIDV-143",
+  "title": null,
+  "date": "2022-07-01",
+  "actress": "八木奈々",
+  "actresses": [
+    "八木奈々"
+  ],
+  "maker": "ムーディーズ",
+  "label": "MOODYZ DIVA",
+  "series": null,
+  "duration": null,
+  "tags": [],
+  "synopsis": null,
+  "rating": null,
+  "rating_count": null,
+  "cover": "https://pics.dmm.co.jp/digital/video/midv00143/midv00143pl.jpg",
+  "director": "トレンディ山口",
+  "_sources": {
+    "javbus": "ok"
+  },
+  "updated_at": "2026-08-27T02:59:23Z"
 }
