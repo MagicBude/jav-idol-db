@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-27T13:30:17",
+  "generated_at": "2026-08-27T13:58:36",
   "counts": {
     "actresses": 18,
     "works": 2012
@@ -93,6 +93,15 @@
     },
     {
       "name": "八木奈々",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/yagi_nana.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 139,
       "codes": [
         "FWAY-021",
@@ -6212,6 +6221,15 @@
     },
     {
       "name": "凪ひかる",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/nagi_hikaru.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 1,
       "codes": [
         "OFJE-585"
@@ -6290,6 +6308,15 @@
     },
     {
       "name": "宮西ひかる",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/miyanishi_hikaru.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 225,
       "codes": [
         "ADN-468",
@@ -14038,6 +14065,15 @@
     },
     {
       "name": "小野坂ゆいか",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/onosaka_yuika.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 169,
       "codes": [
         "ADN-734",
@@ -19590,6 +19626,15 @@
     },
     {
       "name": "本郷愛",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/hongo_ai.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 1,
       "codes": [
         "SONE-560"
@@ -19653,6 +19698,15 @@
     },
     {
       "name": "村上悠華",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/murakami_yuka.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 45,
       "codes": [
         "MBRBA-129",
@@ -27006,6 +27060,15 @@
     },
     {
       "name": "楓ふうあ",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/kaede_fuua.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 70,
       "codes": [
         "BTHA-079",
@@ -29163,6 +29226,15 @@
     },
     {
       "name": "楓カレン",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/kaede_karen.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 104,
       "codes": [
         "FSDSS-609",
@@ -32524,6 +32596,15 @@
     },
     {
       "name": "橘メアリー",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/tachibana_mary.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 501,
       "codes": [
         "AARM-199",
@@ -57958,6 +58039,15 @@
     },
     {
       "name": "瀬戸環奈",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/seto_kanna.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 3,
       "codes": [
         "OFJE-588",
@@ -58156,6 +58246,15 @@
     },
     {
       "name": "田野憂",
+      "aliases": [],
+      "birthdate": null,
+      "height": null,
+      "measurements": null,
+      "agency": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/tano_yui.jpg",
+      "bio": "",
+      "source": "dmm-avatar-backfill",
+      "updated_at": "2026-08-27",
       "work_count": 1,
       "codes": [
         "SONE-565"
@@ -58217,10 +58316,10 @@
       "height": null,
       "measurements": null,
       "agency": null,
-      "avatar": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/hakutou_hana.jpg",
       "bio": "",
       "source": "migrated-from-prototype",
-      "updated_at": "2026-08-24",
+      "updated_at": "2026-08-27",
       "work_count": 223,
       "codes": [
         "AGCN-001",
@@ -60504,10 +60603,10 @@
       "height": null,
       "measurements": null,
       "agency": null,
-      "avatar": null,
+      "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/ishikawa_mio.jpg",
       "bio": "",
       "source": "migrated-from-prototype",
-      "updated_at": "2026-08-24",
+      "updated_at": "2026-08-27",
       "work_count": 82,
       "codes": [
         "FWAY-008",
