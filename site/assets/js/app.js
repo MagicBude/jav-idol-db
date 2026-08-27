@@ -1,6 +1,6 @@
 /* ===================================================================
-   jav-idol-db 站点逻辑（仿 codeav 单页 SPA）
-   - 读取 window.JAV_DB（scripts/build_index.py 生成）
+   jav-idol-db 站点逻辑（中文 JAV 资料库 单页 SPA）
+   - 读取 window.JAV_DB（scripts/build_index.py 生成），含 zh 中文别名层
    - hash 路由：#/ 首页 | #/a/<女优> | #/w/<番号> |
                 #/t/<标签> | #/m/<片商> | #/s/<系列> | #/q/<搜索>
    - 标签 / 片商 / 系列 / 女优 全部可点，跳转筛选视图
@@ -10,6 +10,42 @@
   "use strict";
 
   var DB = window.JAV_DB || { actresses: [], counts: {} };
+  var ZH = (DB.zh || {});
+  var ACTRESS_ZH = ZH.actress_zh || {};   // 日文女优名 -> 中文名
+  var TAG_ZH = ZH.tag_zh || {};            // 日文标签 -> 中文
+  // 反向映射：中文 -> 日文（用于中文搜索命中）
+  var ZH_TO_JP_ACTRESS = {};
+  Object.keys(ACTRESS_ZH).forEach(function (jp) { ZH_TO_JP_ACTRESS[ACTRESS_ZH[jp]] = jp; });
+  var ZH_TO_JP_TAG = {};
+  Object.keys(TAG_ZH).forEach(function (jp) { ZH_TO_JP_TAG[TAG_ZH[jp]] = jp; });
+
+  // 女优显示名：有中文则显示「中文（日文）」
+  function actressName(jp) {
+    var zh = ACTRESS_ZH[jp];
+    return zh ? (zh + "（" + jp + "）") : jp;
+  }
+  // 标签显示名：有中文则显示中文
+  function tagName(jp) {
+    return TAG_ZH[jp] || jp;
+  }
+
+  // 中文感知搜索：q 已 lowercased；命中 番号/片名/女优(中或日)/厂牌/系列/标签(中或日)
+  function workMatchesQuery(r, q) {
+    if (!q) return true;
+    var w = r.w;
+    if ((w.code || "").toLowerCase().indexOf(q) >= 0) return true;
+    if ((w.title || "").toLowerCase().indexOf(q) >= 0) return true;
+    var o = r.owner || "";
+    if (o.toLowerCase().indexOf(q) >= 0) return true;
+    if ((ACTRESS_ZH[o] || "").toLowerCase().indexOf(q) >= 0) return true;
+    if ((w.maker || "").toLowerCase().indexOf(q) >= 0) return true;
+    if ((w.label || "").toLowerCase().indexOf(q) >= 0) return true;
+    if ((w.series || "").toLowerCase().indexOf(q) >= 0) return true;
+    if ((w.tags || []).some(function (t) {
+      return t.toLowerCase().indexOf(q) >= 0 || (TAG_ZH[t] || "").toLowerCase().indexOf(q) >= 0;
+    })) return true;
+    return false;
+  }
 
   /* ---- 扁平化作品（带上归属女优）---- */
   var WORKS = [];          // [{w, owner, ownerAvatar}]
@@ -73,7 +109,7 @@
         '<div class="body">' +
           '<div class="name">' + esc(w.code) + "</div>" +
           '<div class="sub">' + title + "</div>" +
-          '<div class="meta">' + (w.date || "") + (rec.owner ? " · " + esc(rec.owner) : "") + "</div>" +
+          '<div class="meta">' + (w.date || "") + (rec.owner ? " · " + esc(actressName(rec.owner)) : "") + "</div>" +
         "</div>" +
       "</a>"
     );
@@ -87,7 +123,7 @@
         '<div class="thumb portrait"' + cover + ">" +
           (a.avatar ? "" : '<span class="ph">' + esc(a.name) + "</span>") +
         "</div>" +
-        '<div class="body"><div class="name">' + esc(a.name) + "</div>" +
+        '<div class="body"><div class="name">' + esc(actressName(a.name)) + "</div>" +
         '<div class="sub">' + (a.work_count || 0) + " 部作品</div></div></a>"
     );
   }
@@ -96,7 +132,8 @@
   function chip(type, val) {
     if (!val) return "";
     var route = { t: "#/t/", m: "#/m/", s: "#/s/" }[type];
-    return '<a class="chip" href="' + route + enc(val) + '">' + esc(val) + "</a>";
+    var label = (type === "t") ? tagName(val) : val;
+    return '<a class="chip" href="' + route + enc(val) + '">' + esc(label) + "</a>";
   }
   function chips(type, arr) {
     if (!arr || !arr.length) return "";
@@ -128,9 +165,9 @@
 
     return (
       '<section class="hero">' +
-        '<h1>JAV 女优作品情报库</h1>' +
+        '<h1>JAV 中文资料库</h1>' +
         '<p class="lead">' + (DB.counts.actresses || acts.length) + " 位女优 · " +
-          (DB.counts.works || WORKS.length) + " 部作品 · 标签 / 片商 / 系列 一键筛选</p>" +
+          (DB.counts.works || WORKS.length) + " 部作品 · 支持中文 / 日文 / 英文检索，标签 / 片商 / 系列 一键筛选</p>" +
       "</section>" +
 
       '<section class="block">' +
@@ -162,9 +199,9 @@
     return (
       '<div class="crumb"><a href="#/">首页</a> / 女优 / <b>' + esc(a.name) + "</b></div>" +
       '<div class="profile">' +
-        '<div class="avatar"' + bg(a.avatar) + ">" + (a.avatar ? "" : esc(a.name)) + "</div>" +
+        '<div class="avatar"' + bg(a.avatar) + ">" + (a.avatar ? "" : esc(actressName(a.name))) + "</div>" +
         "<div class=\"pinfo\">" +
-          "<h1>" + esc(a.name) + "</h1>" +
+          "<h1>" + esc(actressName(a.name)) + "</h1>" +
           (a.aliases && a.aliases.length ? '<div class="row">别名：' + a.aliases.map(esc).join("、") + "</div>" : "") +
           (a.birthdate ? '<div class="row">生日：' + esc(a.birthdate) + "</div>" : "") +
           (a.height ? '<div class="row">身高：' + esc(a.height) + " cm</div>" : "") +
@@ -188,7 +225,7 @@
     var w = rec.w;
     var rows = "";
     if (w.date) rows += row("发行日", w.date);
-    if (rec.owner) rows += '<div class="row"><b>女优</b>：<a href="#/a/' + enc(rec.owner) + '">' + esc(rec.owner) + "</a></div>";
+    if (rec.owner) rows += '<div class="row"><b>女优</b>：<a href="#/a/' + enc(rec.owner) + '">' + esc(actressName(rec.owner)) + "</a></div>";
     if (w.maker) rows += '<div class="row"><b>片商</b>：' + chip("m", w.maker) + "</div>";
     if (w.label) rows += '<div class="row"><b>厂牌</b>：' + chip("m", w.label) + "</div>";
     if (w.series) rows += '<div class="row"><b>系列</b>：' + chip("s", w.series) + "</div>";
@@ -211,7 +248,7 @@
 
     return (
       '<div class="crumb"><a href="#/">首页</a> / <a href="#/a/' + enc(rec.owner || "") + '">' +
-        esc(rec.owner || "未知") + "</a> / <b>" + esc(w.code) + "</b></div>" +
+        esc(actressName(rec.owner || "未知")) + "</a> / <b>" + esc(w.code) + "</b></div>" +
       '<div class="detail">' +
         '<div class="poster"' + bg(w.cover) + ">" + (w.cover ? "" : esc(w.code)) + "</div>" +
         "<div class=\"dinfo\">" +
@@ -242,7 +279,7 @@
     var head = (type === "t" ? "#/t/" : type === "m" ? "#/m/" : "#/s/") + enc(value);
     return (
       '<div class="crumb"><a href="#/">首页</a> / ' + label + ' / <b>' + esc(value) + "</b></div>" +
-      '<div class="block-head"><h2>' + esc(label) + "：" + esc(value) + "</h2>" +
+      '<div class="block-head"><h2>' + esc(label) + "：" + esc(type === "t" ? tagName(value) : value) + "</h2>" +
         '<span class="muted">' + recs.length + " 部</span></div>" +
       sortControls("date_desc") +
       '<div id="gridwrap">' + gridHtml(recs.sort(SORTERS.date_desc)) + "</div>"
@@ -264,15 +301,7 @@
         '<div id="gridwrap">' + gridHtml(all) + "</div>"
       );
     }
-    var recs = WORKS.filter(function (r) {
-      var w = r.w;
-      return (w.code || "").toLowerCase().indexOf(q) >= 0 ||
-             (w.title || "").toLowerCase().indexOf(q) >= 0 ||
-             (r.owner || "").toLowerCase().indexOf(q) >= 0 ||
-             (w.maker || "").toLowerCase().indexOf(q) >= 0 ||
-             (w.series || "").toLowerCase().indexOf(q) >= 0 ||
-             (w.tags || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; });
-    });
+    var recs = WORKS.filter(function (r) { return workMatchesQuery(r, q); });
     return (
       '<div class="crumb"><a href="#/">首页</a> / 搜索：<b>' + esc(q) + "</b></div>" +
       '<div class="block-head"><h2>搜索结果</h2><span class="muted">' + recs.length + " 部</span></div>" +
@@ -336,15 +365,7 @@
     if (main === "q") {
       var q = (param || "").trim().toLowerCase();
       if (!q) return WORKS.slice();
-      return WORKS.filter(function (r) {
-        var w = r.w;
-        return (w.code || "").toLowerCase().indexOf(q) >= 0 ||
-               (w.title || "").toLowerCase().indexOf(q) >= 0 ||
-               (r.owner || "").toLowerCase().indexOf(q) >= 0 ||
-               (w.maker || "").toLowerCase().indexOf(q) >= 0 ||
-               (w.series || "").toLowerCase().indexOf(q) >= 0 ||
-               (w.tags || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; });
-      });
+      return WORKS.filter(function (r) { return workMatchesQuery(r, q); });
     }
     return WORKS.slice();
   }

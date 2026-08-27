@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-build_index.py —— 扫描 data/ 下所有女优档案与作品，生成两份汇总索引：
+build_index.py —— 扫描 data/ 下所有作品，生成两份汇总索引：
     1) data/index.json            —— 给程序 / API 用
     2) site/assets/js/data.js     —— window.JAV_DB = {...}，给站点用（支持 file:// 双击打开）
 
@@ -9,21 +9,45 @@ build_index.py —— 扫描 data/ 下所有女优档案与作品，生成两份
     python scripts/build_index.py
     python scripts/build_index.py --check   # 只校验数据完整性，不写文件
 
-设计（写给初学者）：
-    - data/actresses/<名>/profile.json 是女优属性；works/<番号>.json 是作品。
-    - 女优的 work_count / codes 不手存，这里实时聚合，避免和 works/ 不一致。
-    - 站点读 data.js（内联 JSON），所以改完 data/ 一定要重跑本脚本，站点才会更新。
+数据来源（双布局合并）：
+    - data/works/<番号>.json                  ← 扁平库（规范源，近期全量精选，优先）
+    - data/actresses/<女优>/works/<番号>.json ← 嵌套库（旧布局，用于补缺）
+      · 仅当扁平库没有该番号、且嵌套记录 title+date 齐全时才补缺，
+        避免把残缺旧抓（title/date/cover 全空）灌进网站。
+    · 两库冲突时扁平库胜出（扁平库是已校订的规范源）。
+
+女优归属：
+    · 每部作品取 owner = work['actress']，缺则取 work['actresses'][0]
+    · 完全没有女优信息的归入「其他作品」聚合女优（保证不丢作品）
+    · 女优的 work_count / codes 实时聚合，并从 data/actresses/<名>/profile.json
+      合并 avatar/bio/aliases 等档案字段（若存在）。
+
+中文层：data/zh.json（actress_zh / tag_zh）原样带入选定。
+站点读 data.js（内联 JSON），所以改完 data/ 一定要重跑本脚本，站点才会更新。
 """
 
 import argparse
+import glob
 import json
 import os
 from datetime import datetime
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ACTRESSES_DIR = os.path.join(BASE, "data", "actresses")
+WORKS_DIR = os.path.join(BASE, "data", "works")
 INDEX_JSON = os.path.join(BASE, "data", "index.json")
 DATA_JS = os.path.join(BASE, "site", "assets", "js", "data.js")
+ZH_JSON = os.path.join(BASE, "data", "zh.json")
+
+OTHER = "其他作品"  # 无主作品的聚合女优名
+
+
+def load_zh():
+    try:
+        with open(ZH_JSON, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"actress_zh": {}, "tag_zh": {}}
 
 
 def load_json(path):
@@ -34,28 +58,88 @@ def load_json(path):
         return None
 
 
-def build():
-    actresses = []
-    for name in sorted(os.listdir(ACTRESSES_DIR)):
-        adir = os.path.join(ACTRESSES_DIR, name)
-        if not os.path.isdir(adir):
+def _owner_of(w):
+    """返回作品的归属女优；都没有则返回 None。"""
+    o = w.get("actress")
+    if o:
+        return o
+    acts = w.get("actresses") or []
+    return acts[0] if acts else None
+
+
+def load_merged_works():
+    """返回 {code: work}，扁平库优先，嵌套库仅补缺且要求 title+date 齐全。"""
+    merged = {}
+
+    # 1) 先装嵌套库（旧布局，覆盖面更广：含 VR / 写真 等）
+    for fp in glob.glob(os.path.join(ACTRESSES_DIR, "*", "works", "*.json")):
+        w = load_json(fp)
+        if not w:
             continue
-        profile = load_json(os.path.join(adir, "profile.json")) or {"name": name}
-        works_dir = os.path.join(adir, "works")
-        works = []
-        if os.path.isdir(works_dir):
-            for fn in sorted(os.listdir(works_dir)):
-                if fn.endswith(".json"):
-                    w = load_json(os.path.join(works_dir, fn))
-                    if w:
-                        works.append(w)
-        # 聚合 codes 与 count
-        codes = sorted({w.get("code") for w in works if w.get("code")})
-        profile["work_count"] = len(works)
-        profile["codes"] = codes
-        profile["name"] = profile.get("name") or name
-        profile["works"] = works
-        actresses.append(profile)
+        c = w.get("code")
+        if not c:
+            continue
+        # 缺口补缺门槛：必须有标题与日期，否则视为残缺旧抓不入库
+        if not (w.get("title") and w.get("date")):
+            continue
+        merged.setdefault(c, w)
+
+    # 2) 扁平库覆盖（规范源，胜出）
+    if os.path.isdir(WORKS_DIR):
+        for fp in glob.glob(os.path.join(WORKS_DIR, "*.json")):
+            w = load_json(fp)
+            if not w:
+                continue
+            c = w.get("code")
+            if not c:
+                continue
+            merged[c] = w  # 扁平库优先
+
+    return merged
+
+
+def build():
+    merged = load_merged_works()
+
+    # 按女优分组
+    by_owner = {}
+    for code, w in merged.items():
+        owner = _owner_of(w) or OTHER
+        by_owner.setdefault(owner, []).append(w)
+
+    # 预载现有女优档案（avatar / bio / aliases 等）
+    profiles = {}
+    if os.path.isdir(ACTRESSES_DIR):
+        for name in sorted(os.listdir(ACTRESSES_DIR)):
+            adir = os.path.join(ACTRESSES_DIR, name)
+            if not os.path.isdir(adir):
+                continue
+            p = load_json(os.path.join(adir, "profile.json")) or {}
+            p["name"] = p.get("name") or name
+            profiles[name] = p
+
+    actresses = []
+    for name in sorted(by_owner):
+        works = by_owner[name]
+        # 同女优内按 code 去重（安全网）
+        seen = set()
+        uniq = []
+        for w in works:
+            c = w.get("code")
+            if c in seen:
+                continue
+            seen.add(c)
+            uniq.append(w)
+        uniq.sort(key=lambda x: x.get("code") or "")
+        codes = sorted({w.get("code") for w in uniq if w.get("code")})
+
+        meta = profiles.get(name, {"name": name})
+        meta["name"] = meta.get("name") or name
+        meta["work_count"] = len(uniq)
+        meta["codes"] = codes
+        meta["works"] = uniq
+        actresses.append(meta)
+
     return actresses
 
 
@@ -66,7 +150,7 @@ def validate(actresses):
             problems.append("女优缺少 name")
         for w in a.get("works", []):
             if not w.get("code"):
-                problems.append(f"{a.get('name')} 下有作品缺 code")
+                problems.append("%s 下有作品缺 code" % (a.get("name")))
     return problems
 
 
@@ -79,7 +163,7 @@ def main():
     problems = validate(actresses)
 
     total_works = sum(a["work_count"] for a in actresses)
-    print(f"聚合：{len(actresses)} 位女优 / {total_works} 部作品")
+    print("聚合：%d 位女优 / %d 部作品" % (len(actresses), total_works))
     if problems:
         print("数据问题：")
         for p in problems:
@@ -93,6 +177,7 @@ def main():
     index = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "counts": {"actresses": len(actresses), "works": total_works},
+        "zh": load_zh(),
         "actresses": actresses,
     }
     os.makedirs(os.path.dirname(INDEX_JSON), exist_ok=True)
@@ -103,7 +188,7 @@ def main():
         f.write("window.JAV_DB = ")
         json.dump(index, f, ensure_ascii=False)
         f.write(";\n")
-    print(f"已生成：\n  {INDEX_JSON}\n  {DATA_JS}")
+    print("已生成：\n  %s\n  %s" % (INDEX_JSON, DATA_JS))
 
 
 if __name__ == "__main__":
