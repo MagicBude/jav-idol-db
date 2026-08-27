@@ -18,3 +18,48 @@ scratch/
 
 # 大文件（封面图按需入库，单文件勿超 100MB）
 # data/images/**/*.jpg 默认入库；如想忽略本地未处理图可在此加规则
+
+# ── 115 改名 / 扫描作业产物（可重生成，不入库）──
+tools/*_plan.csv
+tools/*_plan.json
+tools/*_preview.html
+tools/*_report.html
+tools/*_rename_backup.json
+tools/*_backup.json
+tools/115_*
+tools/strip_fua_*
+tools/strip_karen_*
+tools/strip_kawakita_*
+tools/strip_miyanishi_*
+tools/strip_murakami_*
+tools/strip_yagi_*
+tools/hb_*
+tools/hbcov_*
+tools/mx_*
+tools/mxcov_*
+tools/onosaka_*
+tools/seto_*
+tools/tsubasa_*
+tools/tachibana_*
+tools/_*
+tools/.cache/
+tools/115_meta_cache.json
+tools/codeav_batch_result.json
+tools/manual_review_nocode.html
+tools/metadata_search_15.html
+
+# ── 一次性脚本（任务专用，非通用工具）──
+tools/enumerate_bare_codes.py
+tools/fill_kawakita_meta.py
+tools/fix_tachibana_bare_scan.py
+tools/fix_tachibana_ed2k.py
+tools/fix_tachibana_overrides.py
+tools/write_tachibana_works.py
+
+# ── 缓存 / 日志 / 审计中间产物 ──
+data/_codeav_primary_cache.json
+enrich_log.txt
+audit_log.txt
+audit_report.json
+attribution_review.json
+tachibana_vr_*.json
