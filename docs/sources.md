@@ -29,21 +29,26 @@
 - 身高 / 三围 / 生日 / 事务所等个人资料：codeav 未必全有，可补充其他公开资料站，
   或先留 `null`，由社区 PR 完善。
 
-## 4. 图片来源
+## 4. 图片来源（全热链，不入库）
 
-- 封面图：codeav / DMM 影片页的 `og:image` 或海报图。注意 DMM 新站是 JS 渲染，
-  纯静态抓取拿不到，需用无头浏览器（Playwright）渲染后取图——见 `scripts/fetch_images.py` 的 TODO。
-  入库路径：`site/assets/img/<女优名>/<番号>.jpg`。
-- 头像：女优官方 / 宣传图，入库路径：`site/assets/img/<女优名>/avatar.jpg`。
-  务必只用**宣传 / 封面类肖像**，不含露骨内容。
+本仓库**不下载、不存储任何图片**，封面与头像均以 URL 形式直接热链源站图床：
+
+- **封面图**：DMM 图床 `https://pics.dmm.co.jp/<section>/<cid>/<cid><suffix>.jpg`。
+  cid 与作品番号存在非统一变换（如 `AKDL→1akdl`、`BAZX→61bazx`），`tools/cover_backfill.py`
+  从已有封面反推厂牌模板、再做 HTTP 200 + 图片校验后回填（绝不存坏链）。
+- **女优头像**：DMM 写真图床 `https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/<romaji>.jpg`，
+  由 `tools/fill_avatars.py` 逐 slug HTTP 校验后写入 `profile.json` 的 `avatar` 字段。
+- 渲染层用 `<img referrerpolicy="no-referrer" onerror=...>` 规避防盗链与坏图占位。
+
+> 因为不入库二进制，仓库始终保持轻量、可 PR、符合 GitHub ToS，也规避了成人图片入库的合规风险。
 
 ## 5. 合规边界（重要）
 
-- 本仓库只收录**公开索引级元数据**（女优名、番号、发行日、片名），以及**宣传 / 封面肖像**。
-- 不收录、不链接任何露骨内容或盗版资源下载。
-- 图片入库请遵守 GitHub ToS（单文件 < 100MB，仓库 < 1GB）；女优头像 / 封面都是小图，无压力。
+- 本仓库只收录**公开索引级元数据**（女优名、番号、发行日、片名），以及**宣传 / 封面肖像的热链 URL**。
+- 不收录、不下载、不链接任何露骨内容或盗版资源。
+- 图片以外链形式存在，不占用仓库容量、不触发 GitHub 二进制 / ToS 限制。
 - 仓库默认 **Private**；确认合规后再改 Public。
-- 若某女优 / 作品要求撤下，及时 PR 删除对应 JSON 与图片。
+- 若某女优 / 作品要求撤下，及时 PR 删除对应 JSON（图片随之外链失效）。
 
 ## 6. 与 115 网盘改名的关系
 

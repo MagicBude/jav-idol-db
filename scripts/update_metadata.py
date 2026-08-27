@@ -18,14 +18,14 @@ update_metadata.py —— 多源自主回补编排器
   # 攻克模式：额外启用 javbus / javdb（CF 重，慢）
   python scripts/update_metadata.py --pending --hard
 
-  # 只校验归属、把放错目录的作品搬回正确女优目录
+  # 只校验归属、把归属写错的 work 的 actress 字段原地修正
   python scripts/update_metadata.py --pending --fix-attribution
 
   # 试跑前 10 个（不落盘）
   python scripts/update_metadata.py --pending --limit 10 --dry-run
 
 产出：
-  - 直接改写 data/actresses/<名>/works/<码>.json（幂等合并）
+  - 直接改写 data/works/<码>.json（幂等合并，单布局唯一真相源）
   - data/pending_review.json  仍 unresolved 的码（交给 agent WebSearch 回填）
   - data/attribution_report.json  归属冲突记录
 """
@@ -45,47 +45,42 @@ from sources import (
     canon_code, merge_work, attribution_conflict,
 )
 
-DATA = os.path.join(ROOT, "data", "actresses")
+DATA = os.path.join(ROOT, "data", "works")
 
 
 def collect_targets(args):
-    targets = []  # (actress_dir, code, path)
+    targets = []  # (actress_hint, code, path)
     if args.code:
         for c in args.code:
             std = canon_code(c)
-            # 在任意女优目录下找
-            found = False
-            for name in sorted(os.listdir(DATA)):
-                p = os.path.join(DATA, name, "works", f"{std}.json")
-                if os.path.exists(p):
-                    targets.append((name, std, p))
-                    found = True
-                    break
-            if not found:
-                targets.append((None, std, None))
+            p = os.path.join(DATA, f"{std}.json")
+            hint = None
+            if os.path.exists(p):
+                try:
+                    hint = json.load(open(p, encoding="utf-8")).get("actress")
+                except Exception:
+                    pass
+            targets.append((hint, std, p if os.path.exists(p) else None))
         return targets
 
-    for name in sorted(os.listdir(DATA)):
-        wd = os.path.join(DATA, name, "works")
-        if not os.path.isdir(wd):
+    for fn in sorted(os.listdir(DATA)):
+        if not fn.endswith(".json"):
             continue
-        for fn in sorted(os.listdir(wd)):
-            if not fn.endswith(".json"):
-                continue
-            std = fn[:-5]
-            p = os.path.join(wd, fn)
-            if args.all:
-                targets.append((name, std, p))
-            elif args.pending:
-                try:
-                    w = json.load(open(p, encoding="utf-8"))
-                except Exception:
-                    targets.append((name, std, p))
-                    continue
-                title = (w.get("title") or "").strip()
-                src = w.get("source")
-                if not title or src in (None, "pending"):
-                    targets.append((name, std, p))
+        std = fn[:-5]
+        p = os.path.join(DATA, fn)
+        try:
+            w = json.load(open(p, encoding="utf-8"))
+        except Exception:
+            targets.append((None, std, p))
+            continue
+        hint = w.get("actress")
+        if args.all:
+            targets.append((hint, std, p))
+        elif args.pending:
+            title = (w.get("title") or "").strip()
+            src = w.get("source")
+            if not title or src in (None, "pending"):
+                targets.append((hint, std, p))
     return targets
 
 
@@ -190,19 +185,12 @@ def main():
                        "suggested": suggested}
                 attrib_report.append(rec)
                 if suggested and args.fix_attribution and path:
-                    dst_dir = os.path.join(DATA, suggested, "works")
-                    os.makedirs(dst_dir, exist_ok=True)
-                    dst = os.path.join(dst_dir, f"{std}.json")
-                    if os.path.abspath(dst) != os.path.abspath(path):
-                        # 更新 work 内 actress 字段
-                        existing["actress"] = suggested
-                        if suggested not in existing.get("actresses", []):
-                            existing.setdefault("actresses", []).append(suggested)
-                        json.dump(existing, open(dst, "w", encoding="utf-8"),
-                                  ensure_ascii=False, indent=1)
-                        os.remove(path)
-                        stats["attrib_moved"] += 1
-                        print(f"    [归属修正] {dir_actress} → {suggested}", flush=True)
+                    # 单布局下归属直接体现在 work 的 actress 字段，原地修正即可
+                    existing["actress"] = suggested
+                    if suggested not in existing.get("actresses", []):
+                        existing.setdefault("actresses", []).append(suggested)
+                    stats["attrib_moved"] += 1
+                    print(f"    [归属修正] {dir_actress} → {suggested}", flush=True)
                 else:
                     stats["attrib_flagged"] += 1
                     print(f"    [归属冲突] dir={dir_actress} vs fetched={fetched_actresses}", flush=True)

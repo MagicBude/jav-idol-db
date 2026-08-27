@@ -8,10 +8,10 @@
   1) 连 115，递归列出子文件夹全部文件（fid + 文件名）。
   2) 从文件名抽 番号 / 画质标签(_4K60fps→[4K][60fps] 等) / 分卷(.partN)。
   3) 抓 codeav 全量元数据（标题+发行日+女优+片商+系列+标签…），并**永久存档**到
-     data/actresses/<女优>/works/<番号>.json（meta_store 负责，命中缓存不重抓）。
+     data/works/<番号>.json（meta_store 负责，单布局唯一真相源，命中缓存不重抓）。
   4) 生成新名：{date} {code} {title}{[画质]}.partN.mp4
      —— 直接用 codeav 原始片名（title），【不】追加女优名：共演作品女优多、加谁都不合适，
-        且片名本身已含信息，加女优名只徒增歧义/撞名。--actress 仅用于元数据归类（data/actresses/<女优>/）。
+        且片名本身已含信息，加女优名只徒增歧义/撞名。--actress 仅用于元数据归类（写进 work 的 actress 字段）。
   5) 默认 dry-run：写预览 HTML/CSV/JSON，打印统计。**不改动 115**。
      --apply 才执行批量改名（带备份 + 逐 fid 复核）。
 
@@ -40,7 +40,7 @@ VIDEO_EXT = ("mp4", "iso", "mkv", "ts", "wmv", "mov")
 IMAGE_EXT = ("jpg", "jpeg", "png", "webp", "gif", "bmp")
 MEDIA_EXT = VIDEO_EXT + IMAGE_EXT
 
-# ---- 加载元数据持久层（抓取 + 落盘 data/actresses/<女优>/works/<番号>.json）----
+# ---- 加载元数据持久层（抓取 + 落盘 data/works/<番号>.json，单布局唯一真相源）----
 sys.path.insert(0, HERE)
 from meta_store import get_meta  # noqa: E402
 
@@ -234,7 +234,7 @@ def make_plan(items, folder_actress, workers=8):
         # （满足用户「原片名是啥样就用啥样」；仅当原文件缺标题/日期时才用 codeav 补全）
         title = body if body else codeav_title
         date = date_prefix or codeav_date
-        # --actress 仅用于元数据归类（data/actresses/<女优>/works/），不再写进文件名
+        # --actress 仅用于元数据归类（写进 work 的 actress 字段），不再写进文件名
         actress = folder_actress
         new = build_newname(code, part, tags, title, date, copy=copy, ext=ext)
         issues = []
@@ -313,7 +313,7 @@ def main():
     sid = connect()
     print("列出文件 ...", flush=True)
     items = collect(sid, ROOT_CID)
-    print(f"共 {len(items)} 个文件，解析并抓取全量元数据（落盘 data/actresses/{FOLDER_ACTRESS}/works/）...", flush=True)
+    print(f"共 {len(items)} 个文件，解析并抓取全量元数据（落盘 data/works/ 唯一真相源）...", flush=True)
     plan, meta = make_plan(items, FOLDER_ACTRESS)
     if args.skip_codes:
         skipset = {c.strip().upper() for c in args.skip_codes.split(",") if c.strip()}

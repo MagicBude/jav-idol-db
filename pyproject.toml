@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jav-idol-db"
+version = "0.4.0"
+description = "日本 AV 女优与番号元数据资料库：单布局 JSON 真相源 + 纯静态站点 + 115 改名工具链"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "MagicBude" }]
+keywords = ["jav", "metadata", "codeav", "static-site", "115"]
+
+# 运行时依赖：核心抓取/构建仅用 Python 标准库。
+# 部分数据源（javbus/javdb/fanza）需本机宽网络 + Playwright 才能抓取；
+# 沙箱环境下会优雅降级，不影响 codeav 主路径。
+dependencies = [
+    "playwright>=1.40; sys_platform == 'linux' or sys_platform == 'win32'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+jav-db-build = "scripts.build_index:main"
+jav-db-scrape = "scripts.scrape_codeav:main"
+jav-db-query = "tools.jav:main"
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

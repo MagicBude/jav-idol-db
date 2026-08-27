@@ -5,8 +5,7 @@ meta_store —— 通用 JAV 元数据持久层（一次抓取，永久存档）
 定位：把 codeav 抓到的「全量元数据」（标题/日期/女优/片商 maker/厂牌 label/
       系列 series/标签 tags/时长/简介/封面/评分…）落盘到项目的标准仓库：
 
-      data/works/<番号>.json          ← 番号级共享仓库（权威，所有女优文件夹共用一份）
-      data/actresses/<女优>/works/<番号>.json  ← 女优目录镜像（供女优页/旧脚本枚举）
+      data/works/<番号>.json          ← 番号级共享仓库（唯一真相源，所有女优文件夹共用一份）
 
 并维护 data/_code_meta_index.json（番号 -> 文件路径，指向共享仓库）做 O(1) 缓存命中，
 这样之后无论改名、建站、还是回答「这部的标签/片商是什么」都不再重新联网抓取。
@@ -19,7 +18,7 @@ meta_store —— 通用 JAV 元数据持久层（一次抓取，永久存档）
 
 设计要点：
   - actress 参数 = 「该文件所属的女优合集」（由调用方按 115 文件夹传入）。
-    落盘时把 actress 字段强制写成它，并放到对应女优目录下 —— 保证「谁的文件归谁」。
+    落盘时把 actress 字段写成它 —— 保证「谁的文件归谁」（女优归属在 build_index 时聚合）。
   - 若 codeav 抓不到（404/限流），仍写一个最小 stub（code+actress+updated_at），
     避免反复打网络。
 """
@@ -33,8 +32,7 @@ sys.path.insert(0, HERE)
 from jav import codeav_product, fetch_product  # noqa: E402
 from sources.base import canon_code  # noqa: E402
 
-WORKS_ROOT = os.path.join(ROOT, "data", "actresses")
-WORKS_SHARED = os.path.join(ROOT, "data", "works")   # 番号级共享仓库（合集/共演码跨女优复用，权威）
+WORKS_SHARED = os.path.join(ROOT, "data", "works")   # 番号级共享仓库（唯一真相源，合集/共演码跨女优复用）
 INDEX_PATH = os.path.join(ROOT, "data", "_code_meta_index.json")
 ZH_PATH = os.path.join(ROOT, "data", "zh.json")
 
@@ -56,10 +54,6 @@ def _load_index():
 def _save_index(idx):
     os.makedirs(os.path.dirname(INDEX_PATH), exist_ok=True)
     json.dump(idx, open(INDEX_PATH, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-
-
-def _path_for(actress, code):
-    return os.path.join(WORKS_ROOT, actress, "works", f"{code}.json")
 
 
 def _path_shared(code):
@@ -91,32 +85,14 @@ def _write_shared(d, ckey):
         _save_index(cur)
 
 
-def _write_mirror(d, actress, ckey):
-    """写女优目录镜像（供旧脚本/女优页按女优枚举作品）。不改变索引（索引永远指向共享）。"""
-    if not actress:
-        return
-    p = _path_for(actress, ckey)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    json.dump(d, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-
-
 def rebuild_index():
-    """从磁盘重建索引：data/works（共享，权威，优先） + data/actresses/*/works（仅补充）。
-    保证合集/共演码只保留一份权威记录，不被女优镜像覆盖。"""
+    """从磁盘重建索引：只扫描 data/works（唯一真相源）。
+    保证合集/共演码只保留一份权威记录。"""
     idx = {}
     if os.path.isdir(WORKS_SHARED):
         for fn in os.listdir(WORKS_SHARED):
             if fn.endswith(".json"):
                 idx[fn[:-5].upper()] = os.path.join(WORKS_SHARED, fn)
-    if os.path.isdir(WORKS_ROOT):
-        for a in sorted(os.listdir(WORKS_ROOT)):
-            wp = os.path.join(WORKS_ROOT, a, "works")
-            if os.path.isdir(wp):
-                for fn in os.listdir(wp):
-                    if fn.endswith(".json"):
-                        k = fn[:-5].upper()
-                        if k not in idx:
-                            idx[k] = os.path.join(wp, fn)
     _save_index(idx)
     return len(idx)
 
@@ -126,8 +102,8 @@ def get_meta(code, actress=None, use_cache=True):
     """返回全量元数据 dict。
 
     元数据本质是「番号级」的——一部作品只有一个标题/日期/片商，与它落在哪个女优
-    文件夹无关。因此优先读写 data/works/<番号>.json 共享仓库（权威）；女优目录只作镜像，
-    供旧脚本/女优页按女优枚举。这样合集/共演码（OFJE-/MIZD-/SONE- 等）只存一份、
+    文件夹无关。因此统一读写 data/works/<番号>.json 共享仓库（唯一真相源）。
+    这样合集/共演码（OFJE-/MIZD-/SONE- 等）只存一份、
     跨女优文件夹永久复用，不会再出现「昨天有今天没」的重复抓取。
 
     code      : 番号（任意大小写/格式）
@@ -181,7 +157,6 @@ def get_meta(code, actress=None, use_cache=True):
         if zh:
             raw["actress_zh"] = zh
         _write_shared(raw, ckey)
-        _write_mirror(raw, owner, ckey)
         return raw
 
     # 抓不到也写 stub 到共享仓库（关键：避免每个女优文件夹都重复打网络 / 重复写空）
@@ -190,7 +165,6 @@ def get_meta(code, actress=None, use_cache=True):
         d = {"code": ckey, "title": None, "actress": owner,
              "updated_at": _today(), "source": "pending"}
         _write_shared(d, ckey)
-        _write_mirror(d, owner, ckey)
         return d
     return {"code": ckey, "title": None}
 

@@ -63,11 +63,11 @@ def main():
     if args.code:
         f = CodeavFetcher()
         print(json.dumps(audit_one(
-            os.path.join(ROOT, "data/actresses", args.code.split("-")[0], "works", args.code + ".json"),
+            os.path.join(ROOT, "data", "works", args.code + ".json"),
             f), ensure_ascii=False, indent=2))
         return
 
-    paths = sorted(glob.glob(os.path.join(ROOT, "data/actresses", "*", "works", "*.json")))
+    paths = sorted(glob.glob(os.path.join(ROOT, "data", "works", "*.json")))
     print(f"待审计作品数: {len(paths)}")
 
     conflicts, placeholders, nocodeav, ok = [], [], [], 0

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-build_index.py —— 扫描 data/ 下所有作品，生成两份汇总索引：
+"""build_index.py —— 扫描 data/works 下所有作品，生成两份汇总索引：
     1) data/index.json            —— 给程序 / API 用
     2) site/assets/js/data.js     —— window.JAV_DB = {...}，给站点用（支持 file:// 双击打开）
 
@@ -9,12 +8,8 @@ build_index.py —— 扫描 data/ 下所有作品，生成两份汇总索引：
     python scripts/build_index.py
     python scripts/build_index.py --check   # 只校验数据完整性，不写文件
 
-数据来源（双布局合并）：
-    - data/works/<番号>.json                  ← 扁平库（规范源，近期全量精选，优先）
-    - data/actresses/<女优>/works/<番号>.json ← 嵌套库（旧布局，用于补缺）
-      · 仅当扁平库没有该番号、且嵌套记录 title+date 齐全时才补缺，
-        避免把残缺旧抓（title/date/cover 全空）灌进网站。
-    · 两库冲突时扁平库胜出（扁平库是已校订的规范源）。
+数据来源（单一扁平布局）：
+    - data/works/<番号>.json   ← 唯一规范源（已合并原嵌套库 data/actresses/<女优>/works 的有效作品）
 
 女优归属：
     · 每部作品取 owner = work['actress']，缺则取 work['actresses'][0]
@@ -24,6 +19,9 @@ build_index.py —— 扫描 data/ 下所有作品，生成两份汇总索引：
 
 中文层：data/zh.json（actress_zh / tag_zh）原样带入选定。
 站点读 data.js（内联 JSON），所以改完 data/ 一定要重跑本脚本，站点才会更新。
+
+数据安全约定：任何缺 code 字段的文件都会被跳过并在 stdout 告警，绝不静默丢弃
+（历史上曾因空 code 互相覆盖而丢失 ~104 部，现已消除根因）。
 """
 
 import argparse
@@ -67,43 +65,42 @@ def _owner_of(w):
     return acts[0] if acts else None
 
 
-def load_merged_works():
-    """返回 {code: work}，扁平库优先，嵌套库仅补缺且要求 title+date 齐全。"""
-    merged = {}
+def load_works():
+    """返回 {code: work}，仅读扁平库 data/works（唯一真相源）。
 
-    # 1) 先装嵌套库（旧布局，覆盖面更广：含 VR / 写真 等）
-    for fp in glob.glob(os.path.join(ACTRESSES_DIR, "*", "works", "*.json")):
+    缺 code 字段的文件会被跳过并告警，绝不静默丢弃（避免历史上空 code
+    互相覆盖丢失作品的回归）。
+    """
+    works = {}
+    dropped = []
+    if not os.path.isdir(WORKS_DIR):
+        return works, dropped
+    for fp in sorted(glob.glob(os.path.join(WORKS_DIR, "*.json"))):
         w = load_json(fp)
         if not w:
+            dropped.append((os.path.basename(fp), "解析失败/非 JSON"))
             continue
         c = w.get("code")
         if not c:
+            dropped.append((os.path.basename(fp), "缺 code 字段"))
             continue
-        # 缺口补缺门槛：必须有标题与日期，否则视为残缺旧抓不入库
-        if not (w.get("title") and w.get("date")):
-            continue
-        merged.setdefault(c, w)
-
-    # 2) 扁平库覆盖（规范源，胜出）
-    if os.path.isdir(WORKS_DIR):
-        for fp in glob.glob(os.path.join(WORKS_DIR, "*.json")):
-            w = load_json(fp)
-            if not w:
-                continue
-            c = w.get("code")
-            if not c:
-                continue
-            merged[c] = w  # 扁平库优先
-
-    return merged
+        works[c] = w
+    return works, dropped
 
 
 def build():
-    merged = load_merged_works()
+    works, dropped = load_works()
+
+    if dropped:
+        print("跳过 %d 个文件（不参与索引，需人工补 code）：" % len(dropped))
+        for fn, reason in dropped[:20]:
+            print("   - %s  [%s]" % (fn, reason))
+        if len(dropped) > 20:
+            print("   ... 其余 %d 个省略" % (len(dropped) - 20))
 
     # 按女优分组
     by_owner = {}
-    for code, w in merged.items():
+    for code, w in works.items():
         owner = _owner_of(w) or OTHER
         by_owner.setdefault(owner, []).append(w)
 
@@ -120,11 +117,11 @@ def build():
 
     actresses = []
     for name in sorted(by_owner):
-        works = by_owner[name]
+        works_list = by_owner[name]
         # 同女优内按 code 去重（安全网）
         seen = set()
         uniq = []
-        for w in works:
+        for w in works_list:
             c = w.get("code")
             if c in seen:
                 continue

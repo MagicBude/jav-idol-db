@@ -4,7 +4,6 @@ from collections import Counter
 
 DRY = '--dry-run' in sys.argv
 WORKS_DIR = 'data/works'
-NESTED = 'data/actresses'
 
 def load_works():
     d = {}
@@ -17,19 +16,6 @@ def load_works():
         if c:
             d[c] = (fp, w)
     return d
-
-def load_nested_covers():
-    m = {}
-    for fp in glob.glob(os.path.join(NESTED, '*', 'works', '*.json')):
-        try:
-            w = json.load(open(fp, encoding='utf-8'))
-        except Exception:
-            continue
-        c = w.get('code')
-        cov = w.get('cover')
-        if c and cov and c not in m:
-            m[c] = cov
-    return m
 
 def learn_templates(works):
     t = {}
@@ -108,15 +94,12 @@ def valid(u):
 
 def main():
     works = load_works()
-    nested = load_nested_covers()
     tmpl = learn_templates(works)
     missing = [c for c, (fp, w) in works.items() if not w.get('cover')]
     print("total=%d have=%d missing=%d" % (len(works), sum(1 for c, (fp, w) in works.items() if w.get('cover')), len(missing)))
     print("learned templates for %d prefixes" % len(tmpl))
 
     def process(code):
-        if code in nested and valid(nested[code]):
-            return (code, nested[code], 'nested')
         for u, kind in candidates(code, tmpl):
             if valid(u):
                 return (code, u, kind)

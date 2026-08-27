@@ -10,8 +10,8 @@ scrape_all.py —— 批量抓取所有女优作品元数据，可续跑、可�
     python scripts/scrape_all.py --workers 8     # 调并发数
 
 设计说明：
-    - 遍历 data/actresses/<女优>/works/*.json，用「目录名」作为 actress_hint，
-      保证写回正确的女优目录（codeav 页面偶会把 actress 误解析成「女優」等）。
+    - 直接遍历 data/works/*.json（单布局唯一真相源），用每个 work 自身的
+      actress 字段作为 actress_hint（保证写回归属正确）。
     - 续跑：已 source=="codeav" 且非 --force 时跳过，避免重复打站。
     - 原 work 的 cover 路径传入，覆盖时不丢占位。
     - 线程池并发（网络 IO 密集型），失败标记 pending 不抛异常。
@@ -28,31 +28,24 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import scrape_codeav as sc  # noqa: E402
 
-DATA_DIR = sc.DATA_DIR
+DATA_DIR = os.path.join(os.path.dirname(HERE), "data", "works")
 
 
 def collect():
     tasks = []
-    for name in sorted(os.listdir(DATA_DIR)):
-        adir = os.path.join(DATA_DIR, name)
-        if not os.path.isdir(adir):
+    for fn in sorted(os.listdir(DATA_DIR)):
+        if not fn.endswith(".json"):
             continue
-        wdir = os.path.join(adir, "works")
-        if not os.path.isdir(wdir):
+        path = os.path.join(DATA_DIR, fn)
+        try:
+            with open(path, encoding="utf-8") as f:
+                cur = json.load(f)
+        except Exception:
+            cur = {}
+        code = cur.get("code")
+        if not code:
             continue
-        for fn in sorted(os.listdir(wdir)):
-            if not fn.endswith(".json"):
-                continue
-            path = os.path.join(wdir, fn)
-            try:
-                with open(path, encoding="utf-8") as f:
-                    cur = json.load(f)
-            except Exception:
-                cur = {}
-            code = cur.get("code")
-            if not code:
-                continue
-            tasks.append((name, code, cur.get("cover"), cur.get("source")))
+        tasks.append((cur.get("actress") or "", code, cur.get("cover"), cur.get("source")))
     return tasks
 
 

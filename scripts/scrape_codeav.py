@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 scrape_codeav.py —— 从 codeav.net 按番号抓取作品元数据，
-写入 data/actresses/<女优>/works/<番号>.json
+写入 data/works/<番号>.json（单布局唯一真相源）
 
 用法：
     python scripts/scrape_codeav.py IPX-005
@@ -29,7 +29,6 @@ import urllib.error
 from datetime import datetime, date
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE, "data", "actresses")
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
@@ -240,9 +239,8 @@ def scrape_work(code, actress_hint=None, original_cover=None):
 
 
 def save_work(work):
-    """把 work dict 写到 data/actresses/<女优>/works/<番号>.json。"""
-    actress = work.get("actress") or "未知女优"
-    d = os.path.join(DATA_DIR, actress, "works")
+    """把 work dict 写到 data/works/<番号>.json（唯一真相源，扁平布局）。"""
+    d = os.path.join(BASE, "data", "works")
     os.makedirs(d, exist_ok=True)
     path = os.path.join(d, f"{work['code']}.json")
     with open(path, "w", encoding="utf-8") as f:
