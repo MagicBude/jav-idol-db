@@ -92,7 +92,7 @@ make serve            # 等价于 python -m http.server，默认 8766
 ## 常用命令
 
 ```bash
-make build           # 重新生成 data/index.json 与 site/assets/js/data.js
+make build           # 重新生成 data/index.json 与 site/assets/js/data.js（含字段完整性标注；--strict 可作 CI 卡口）
 make audit           # 数据质量自检：字段覆盖率 / 女优作品数 / 缺关键字段清单
 make ingest CODE=IPX-005        # 抓取单个番号元数据 → data/works
 make ingest-all      # 批量重抓 data/works 全部作品

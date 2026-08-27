@@ -88,6 +88,14 @@ a { color: inherit; text-decoration: none; }
   background: rgba(0,0,0,.72); color: #ffd86b; font-size: 12px; font-weight: 700;
   padding: 2px 7px; border-radius: 6px;
 }
+.badge.warn {
+  left: auto; right: 8px; top: 8px; bottom: auto;
+  background: rgba(214, 122, 0, .94); color: #fff;
+}
+.incomplete-note {
+  background: #fff6ec; border: 1px solid #f3d3a8; color: #9a5b00;
+  border-radius: 10px; padding: 10px 14px; font-size: 13.5px; margin-bottom: 14px;
+}
 .body { padding: 9px 10px 11px; }
 .body .name { font-weight: 700; font-size: 13.5px; }
 .body .sub {

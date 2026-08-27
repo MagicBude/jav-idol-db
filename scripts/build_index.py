@@ -7,6 +7,7 @@
 用法：
     python scripts/build_index.py
     python scripts/build_index.py --check   # 只校验数据完整性，不写文件
+    python scripts/build_index.py --strict  # 任一作品缺关键字段(title/cover/date/actress)则非零退出(卡口)
 
 数据来源（单一扁平布局）：
     - data/works/<番号>.json   ← 唯一规范源（已合并原嵌套库 data/actresses/<女优>/works 的有效作品）
@@ -28,6 +29,7 @@ import argparse
 import glob
 import json
 import os
+import sys
 from datetime import datetime
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,6 +40,30 @@ DATA_JS = os.path.join(BASE, "site", "assets", "js", "data.js")
 ZH_JSON = os.path.join(BASE, "data", "zh.json")
 
 OTHER = "其他作品"  # 无主作品的聚合女优名
+
+# 关键字段：缺任一即视为「资料不全」。站点会打徽标，构建会汇总告警，
+# 配合 --strict 可作为 CI 卡口（任一不完整即非零退出，阻断部署）。
+KEY_FIELDS = ["title", "cover", "date", "actress"]
+
+
+def _has_value(w, fld):
+    """判断字段是否「有值」（空串 / 空数组 / 0 视为无值）。"""
+    v = w.get(fld)
+    if v is None:
+        return False
+    if isinstance(v, (str, list)) and len(v) == 0:
+        return False
+    if isinstance(v, (int, float)) and v == 0:
+        return False
+    return True
+
+
+def _annotate(w):
+    """原地给作品打 completeness 标记：missing_fields / incomplete。"""
+    miss = [f for f in KEY_FIELDS if not _has_value(w, f)]
+    w["missing_fields"] = miss
+    w["incomplete"] = bool(miss)
+    return w
 
 
 def load_zh():
@@ -126,7 +152,7 @@ def build():
             if c in seen:
                 continue
             seen.add(c)
-            uniq.append(w)
+            uniq.append(_annotate(w))
         uniq.sort(key=lambda x: x.get("code") or "")
         codes = sorted({w.get("code") for w in uniq if w.get("code")})
 
@@ -154,6 +180,8 @@ def validate(actresses):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="只校验，不写文件")
+    ap.add_argument("--strict", action="store_true",
+                    help="任一作品缺关键字段则以非零状态退出（CI 卡口用）")
     args = ap.parse_args()
 
     actresses = build()
@@ -168,8 +196,27 @@ def main():
     else:
         print("校验通过，无结构问题。")
 
+    # 字段完整性汇总
+    incomplete = [(a["name"], w["code"], w.get("missing_fields"))
+                  for a in actresses for w in a["works"] if w.get("incomplete")]
+    if incomplete:
+        cnt = {}
+        for _, _, mf in incomplete:
+            for f in mf:
+                cnt[f] = cnt.get(f, 0) + 1
+        print("字段完整性：%d 部缺关键字段（title/cover/date/actress）" % len(incomplete))
+        print("  缺失分布：" + "  ".join("%s %d" % (f, cnt[f]) for f in KEY_FIELDS if f in cnt))
+    else:
+        print("字段完整性：全部作品关键字段齐全 ✅")
+
     if args.check:
+        if args.strict and incomplete:
+            sys.exit(1)
         return
+
+    if args.strict and incomplete:
+        print("⛔ --strict：存在 %d 部资料不全的作品，构建已中断（未写文件）。" % len(incomplete))
+        sys.exit(1)
 
     index = {
         "generated_at": datetime.now().isoformat(timespec="seconds"),

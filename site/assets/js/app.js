@@ -103,6 +103,7 @@
   function workCard(rec) {
     var w = rec.w;
     var rating = w.rating ? '<span class="badge">★ ' + w.rating + "</span>" : "";
+    var incomplete = w.incomplete ? '<span class="badge warn">资料不全</span>' : "";
     var title = w.title ? esc(w.title) : "（片名待抓取）";
     return (
       '<a class="card" href="#/w/' + enc(w.code) + '">' +
@@ -110,6 +111,7 @@
           imgTag(w.cover, w.code, "cover-img") +
           (w.cover ? "" : '<span class="ph">' + esc(w.code) + "</span>") +
           rating +
+          incomplete +
         "</div>" +
         '<div class="body">' +
           '<div class="name">' + esc(w.code) + "</div>" +
@@ -229,6 +231,11 @@
     if (!rec) return '<div class="empty">未找到作品：' + esc(code) + "</div>";
     var w = rec.w;
     var rows = "";
+    var incompleteNote = "";
+    if (w.incomplete) {
+      var mf = (w.missing_fields || []).join("、") || "部分可选字段";
+      incompleteNote = '<div class="incomplete-note">⚠️ 本作资料不全，缺失：' + esc(mf) + "</div>";
+    }
     if (w.date) rows += row("发行日", w.date);
     if (rec.owner) rows += '<div class="row"><b>女优</b>：<a href="#/a/' + enc(rec.owner) + '">' + esc(actressName(rec.owner)) + "</a></div>";
     if (w.maker) rows += '<div class="row"><b>片商</b>：' + chip("m", w.maker) + "</div>";
@@ -259,6 +266,7 @@
         "<div class=\"dinfo\">" +
           "<h1>" + (w.title ? esc(w.title) : esc(w.code)) + "</h1>" +
           '<div class="code">' + esc(w.code) + "</div>" +
+          incompleteNote +
           rows +
           (tagHtml ? '<div class="tags">' + tagHtml + "</div>" : "") +
           (ext ? '<div class="extwrap">' + ext + "</div>" : "") +

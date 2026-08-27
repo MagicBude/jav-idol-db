@@ -49,14 +49,42 @@ def _has_value(w, fld):
     return True
 
 
+def _report_one(works, code):
+    """回答「某部作品什么信息不全」：逐字段列出命中/缺失。"""
+    code = code.upper()
+    w = works.get(code)
+    if not w:
+        print("未找到作品：%s（data/works 中无此番号）" % code)
+        sys.exit(2)
+    print("=== 作品 %s 字段明细 ===" % code)
+    for fld in ALL_FIELDS:
+        ok = _has_value(w, fld)
+        mark = "✅" if ok else "❌ 缺失"
+        val = w.get(fld)
+        if isinstance(val, (list, dict)):
+            val = "%d 项" % len(val)
+        elif isinstance(val, str) and len(val) > 40:
+            val = val[:40] + "…"
+        print("  %-12s %s  %s" % (fld, mark, val if ok else ""))
+    miss = [f for f in KEY_FIELDS if not _has_value(w, f)]
+    print()
+    if miss:
+        print("结论：资料不全，缺关键字段 -> %s" % ", ".join(miss))
+    else:
+        print("结论：关键字段齐全 ✅")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="导出机器可读报告到此路径")
     ap.add_argument("--min-coverage", type=int, default=0,
                     help="只显示覆盖率低于该百分比的字段（0=全部）")
+    ap.add_argument("--code", help="只查单个番号的字段明细（如 IPX-005），回答「某部作品什么信息不全」")
     args = ap.parse_args()
 
     works, dropped = load_works()
+    if args.code:
+        return _report_one(works, args.code)
     n = len(works)
 
     # 也能发现 load_works 跳过的文件（缺 code / 解析失败）
