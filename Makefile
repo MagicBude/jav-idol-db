@@ -4,7 +4,7 @@
 PY ?= python3
 SERVE_PORT ?= 8766
 
-.PHONY: help build serve ingest ingest-all backfill-cover backfill-avatar test clean
+.PHONY: help build serve ingest ingest-all backfill-cover backfill-avatar audit test clean
 
 help:  ## 显示可用目标
 	@echo "可用目标:"
@@ -31,6 +31,9 @@ backfill-avatar:  ## 女优头像补全（DMM 写真图床 + HTTP 校验）
 
 test:  ## 运行数据完整性冒烟测试
 	$(PY) -m unittest tests.test_data_integrity -v
+
+audit:  ## 数据质量自检：字段覆盖率 / 女优作品数 / 缺关键字段清单
+	$(PY) scripts/audit_fields.py
 
 clean:  ## 删除 Python 缓存
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

@@ -93,6 +93,7 @@ make serve            # 等价于 python -m http.server，默认 8766
 
 ```bash
 make build           # 重新生成 data/index.json 与 site/assets/js/data.js
+make audit           # 数据质量自检：字段覆盖率 / 女优作品数 / 缺关键字段清单
 make ingest CODE=IPX-005        # 抓取单个番号元数据 → data/works
 make ingest-all      # 批量重抓 data/works 全部作品
 python tools/jav.py code IPX-005            # 查询某部作品（多源）
