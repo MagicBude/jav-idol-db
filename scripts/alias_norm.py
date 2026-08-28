@@ -22,21 +22,11 @@ import os
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ALIAS_PATH = os.path.join(BASE, "data", "actress", "alias.json")
 
-# 手工校正：我们精选女优的可靠中文/变体别名（JavSP 表未以她们为 canonical key，
-# 或把中文名误挂到别人名下，这里显式补全，仅限确信无误者）。
-MANUAL = {
-    "楓カレン": ["枫花恋", "楓花戀", "枫可怜", "楓可怜"],
-    "永野一夏": ["永野いち夏"],
-    "桃乃木かな": ["桃乃木香奈"],
-    "白桃はな": ["白桃花"],
-}
-
 _loaded = False
 _ALIAS = {}
 _REV = {}
 _CURATED_ALIASES = {}
 _NAME_TO_CURATED = {}
-MANUAL_REV = {}  # 手工校正别名 -> 精选 canonical（用于反向归一化）
 
 
 def _curated_set():
@@ -74,18 +64,11 @@ def _load_once():
         for canon in _REV.get(c, set()):
             cluster.add(canon)
             cluster.update(_ALIAS.get(canon, []))
-        # 3) 手工校正的中文/变体别名
-        cluster.update(MANUAL.get(c, []))
         _CURATED_ALIASES[c] = sorted(t for t in cluster if t)
     # 反向索引：任一别名/变体 -> 首个命中的精选 canonical
     for c, terms in _CURATED_ALIASES.items():
         for t in terms:
             _NAME_TO_CURATED.setdefault(t, c)
-    for c, alist in MANUAL.items():
-        if c not in _CURATED_ALIASES:
-            continue
-        for a in alist:
-            MANUAL_REV[a] = c
     # 冲突检测：同一名字若同时属于 ≥2 个精选 cluster，说明 JavSP 表存在「真实误并」，
     # 不应自动合并；此处仅告警，不改写任何数据。
     collisions = {}
@@ -138,11 +121,10 @@ def expand_query(q):
 
 if __name__ == "__main__":
     # 自检
-    cases = ["楓カレン", "枫花恋", "枫可怜", "楓可怜", "田中レモン", "田中檸檬",
+    cases = ["楓カレン", "枫花恋", "田中レモン", "田中檸檬",
              "永野いち夏", "桃乃木香奈"]
     for t in cases:
         print("%-10s -> normalize=%s  search=%s" % (
             t, normalize_actress(t), actress_search_terms(t)))
     print("expand('枫花恋')   =", expand_query("枫花恋"))
     print("expand('田中レモン') =", expand_query("田中レモン"))
-    print("expand('枫可怜')   =", expand_query("枫可怜"))
