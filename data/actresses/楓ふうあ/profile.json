@@ -1,12 +1,16 @@
 {
   "name": "楓ふうあ",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2001-04-20",
+  "height": 170,
+  "measurements": "B93/W59/H88",
+  "agency": "c-more ENTERTAINMENT",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/kaede_fuua.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-27"
+  "bio": "2021年8月以S1专属身份出道，隶属c-more ENTERTAINMENT事务所，以170cm九头身模特身材与F杯著称。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": null,
+  "blood_type": "A",
+  "cup": "F",
+  "debut_year": 2021
 }

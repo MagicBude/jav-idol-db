@@ -1,12 +1,16 @@
 {
   "name": "白桃はな",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2000-05-12",
+  "height": 153,
+  "measurements": "B78/W58/H88",
+  "agency": "マインズ",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/hakutou_hana.jpg",
-  "bio": "",
-  "source": "migrated-from-prototype",
-  "updated_at": "2026-08-27"
+  "bio": "2020年出道，隶属Mine's事务所，以混血感透明容颜与易碎气质著称，曾活动于S1与MOODYZ，2024年后动向不明。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "山形県",
+  "blood_type": null,
+  "cup": "C",
+  "debut_year": 2020
 }

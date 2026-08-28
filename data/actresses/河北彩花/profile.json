@@ -1,12 +1,16 @@
 {
   "name": "河北彩花",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "1999-04-24",
+  "height": 169,
+  "measurements": "B87/W57/H86",
+  "agency": "T-POWERS",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/kawakita_saika.jpg",
-  "bio": "",
-  "source": "migrated-from-prototype",
-  "updated_at": "2026-08-24"
+  "bio": "2018年以S1专属身份出道，隶属T-POWERS事务所，以压倒性透明感美少女形象著称，曾一度引退后于2021年复出，并涉足歌手活动。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "千葉県",
+  "blood_type": "O",
+  "cup": "E",
+  "debut_year": 2018
 }

@@ -1,12 +1,16 @@
 {
   "name": "本郷愛",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "1999-10-28",
+  "height": 158,
+  "measurements": "B85/W53/H85",
+  "agency": "BStar Production",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/hongo_ai.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-27"
+  "bio": "2020年出道，曾用艺名二阶堂梦，隶属BStar事务所，归国子女能使用多国语言，2025年宣布引退。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "東京都",
+  "blood_type": null,
+  "cup": "F",
+  "debut_year": 2020
 }

@@ -1,12 +1,16 @@
 {
   "name": "八木奈々",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2000-09-03",
+  "height": 156,
+  "measurements": "B82/W56/H86",
+  "agency": "マインズ",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/yagi_nana.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-26"
+  "bio": "2019年以MOODYZ专属身份出道，隶属Mine's事务所，以清纯治愈形象与读书、料理等爱好为人知。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "長野県",
+  "blood_type": "A",
+  "cup": "E",
+  "debut_year": 2019
 }

@@ -1,12 +1,16 @@
 {
   "name": "宮西ひかる",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "1999-08-22",
+  "height": 161,
+  "measurements": "B88/W61/H86",
+  "agency": "LIGHT",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/miyanishi_hikaru.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-27"
+  "bio": "2022年1月以IDEA POCKET专属身份出道，隶属LIGHT事务所，以甜美笑容与E杯身材的治愈系风格知名。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": null,
+  "blood_type": null,
+  "cup": "E",
+  "debut_year": 2022
 }

@@ -3,12 +3,16 @@
   "aliases": [
     "Momonogi Kana"
   ],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "1996-12-24",
+  "height": 153,
+  "measurements": "B89/W58/H83",
+  "agency": "Life Promotion",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/momonogi_kana.jpg",
-  "bio": "",
-  "source": "seed",
-  "updated_at": "2026-08-24"
+  "bio": "2015年出道，隶属Life Promotion事务所，惠比寿麝香葡萄成员，曾获FANZA最优秀女演员奖，2025年宣布引退。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "東京都",
+  "blood_type": "AB",
+  "cup": "F",
+  "debut_year": 2015
 }

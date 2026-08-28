@@ -1,12 +1,16 @@
 {
   "name": "小野坂ゆいか",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2002-02-09",
+  "height": 164,
+  "measurements": "B97/W62/H100",
+  "agency": "T-POWERS",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/onosaka_yuika.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-27"
+  "bio": "2024年6月以IDEA POCKET专属身份出道，后转企划单体并隶属T-POWERS事务所，以高产与治愈系笑容著称。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": null,
+  "blood_type": "A",
+  "cup": "H",
+  "debut_year": 2024
 }

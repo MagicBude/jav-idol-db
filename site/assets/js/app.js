@@ -213,12 +213,16 @@
           "<h1>" + esc(actressName(a.name)) + "</h1>" +
           (a.aliases && a.aliases.length ? '<div class="row">别名：' + a.aliases.map(esc).join("、") + "</div>" : "") +
           (a.birthdate ? '<div class="row">生日：' + esc(a.birthdate) + "</div>" : "") +
+          (a.birthplace ? '<div class="row">出身地：' + esc(a.birthplace) + "</div>" : "") +
+          (a.blood_type ? '<div class="row">血型：' + esc(a.blood_type) + "</div>" : "") +
           (a.height ? '<div class="row">身高：' + esc(a.height) + " cm</div>" : "") +
-          (a.measurements ? '<div class="row">三围：' + esc(a.measurements) + "</div>" : "") +
+          (a.measurements ? '<div class="row">三围：' + esc(a.measurements) + (a.cup ? "（" + esc(a.cup) + "杯）" : "") + "</div>" : "") +
+          (a.debut_year ? '<div class="row">出道：' + esc(a.debut_year) + " 年</div>" : "") +
           (a.agency ? '<div class="row">事务所：' + esc(a.agency) + "</div>" : "") +
           '<div class="row">作品数：' + (a.work_count || 0) + " 部</div>" +
         "</div>" +
       "</div>" +
+      (a.bio ? '<section class="block bio-block"><div class="block-head"><h2>个人简介</h2></div><p class="synopsis">' + esc(a.bio) + "</p></section>" : "") +
       '<div class="block-head"><h2>作品</h2><span class="muted">' + recs.length + " 部</span></div>" +
       sortControls("date_desc") +
       '<div id="gridwrap">' + gridHtml(recs.sort(SORTERS.date_desc)) + "</div>"

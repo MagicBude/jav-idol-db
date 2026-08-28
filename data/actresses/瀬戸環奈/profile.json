@@ -1,12 +1,16 @@
 {
   "name": "瀬戸環奈",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2004-05-10",
+  "height": 170,
+  "measurements": "B101/W59/H91",
+  "agency": "Bstar",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/seto_kanna.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-27"
+  "bio": "2025年1月以S1专属身份AV出道（写真先行），隶属Bstar事务所，以170cm身高与J杯（101cm）的核弹级比例被誉为怪物新人。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "神奈川県",
+  "blood_type": "A",
+  "cup": "J",
+  "debut_year": 2025
 }

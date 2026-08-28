@@ -1,12 +1,16 @@
 {
   "name": "永野一夏",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "1997-11-23",
+  "height": 150,
+  "measurements": "B78/W54/H75",
+  "agency": "DINO",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/nagano_ichika.jpg",
-  "bio": "",
-  "source": "migrated-from-prototype",
-  "updated_at": "2026-08-24"
+  "bio": "2019年6月出道，隶属DINO事务所，原偶像团体成员，以娇小身材（150cm、C杯）与动漫游戏爱好著称。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "神奈川県",
+  "blood_type": "A",
+  "cup": "C",
+  "debut_year": 2019
 }

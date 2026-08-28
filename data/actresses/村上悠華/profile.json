@@ -1,12 +1,16 @@
 {
   "name": "村上悠華",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2003-01-30",
+  "height": 163,
+  "measurements": "B85/W59/H88",
+  "agency": "LIGHT",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/murakami_yuka.jpg",
-  "bio": "",
-  "source": "dmm-avatar-backfill",
-  "updated_at": "2026-08-27"
+  "bio": "2023年9月以S1专属身份出道，隶属LIGHT事务所，出道前为东京观光巴士导游，以清纯脸与E杯反差著称。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "東京都",
+  "blood_type": null,
+  "cup": "E",
+  "debut_year": 2023
 }

@@ -1,12 +1,16 @@
 {
   "name": "石川澪",
   "aliases": [],
-  "birthdate": null,
-  "height": null,
-  "measurements": null,
-  "agency": null,
+  "birthdate": "2002-03-20",
+  "height": 158,
+  "measurements": "B82/W58/H86",
+  "agency": "ALIVE",
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/ishikawa_mio.jpg",
-  "bio": "",
-  "source": "migrated-from-prototype",
-  "updated_at": "2026-08-27"
+  "bio": "2021年10月以MOODYZ专属身份出道，后于2022年3月移籍S1，隶属ALIVE事务所，以透明感美少女形象被誉为清纯天花板。",
+  "source": "researched",
+  "updated_at": "2026-08-28",
+  "birthplace": "東京都",
+  "blood_type": null,
+  "cup": "C",
+  "debut_year": 2021
 }
