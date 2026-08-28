@@ -241,13 +241,14 @@
      视图：资料库总览统计
      ================================================================= */
   function viewStats() {
-    var years = {}, makers = {}, tags = {};
+    var years = {}, makers = {}, tags = {}, directors = {};
     var rated = 0, ratingSum = 0;
     WORKS.forEach(function (r) {
       var w = r.w;
       var y = (w.date || "").slice(0, 4);
       if (y) years[y] = (years[y] || 0) + 1;
       if (w.maker) makers[w.maker] = (makers[w.maker] || 0) + 1;
+      if (w.director) directors[w.director] = (directors[w.director] || 0) + 1;
       (w.tags || []).forEach(function (t) { tags[t] = (tags[t] || 0) + 1; });
       if (w.rating) { rated++; ratingSum += w.rating; }
     });
@@ -268,6 +269,7 @@
 
     var topMakers = topMap(makers, 15);
     var topTags = topMap(tags, 24);
+    var topDirectors = topMap(directors, 10);
     var actressRank = DB.actresses.slice().sort(function (a, b) {
       return (b.works ? b.works.length : 0) - (a.works ? a.works.length : 0);
     }).slice(0, 15);
@@ -298,7 +300,12 @@
       '<section class="block"><div class="block-head"><h2>女优作品量 Top 15</h2></div>' +
         '<ol class="rank">' + actressRank.map(function (a) {
           return '<li><a href="#/a/' + enc(a.name) + '">' + esc(actressName(a.name)) + '</a><span class="rc">' + (a.works ? a.works.length : 0) + "</span></li>";
-        }).join("") + "</ol></section>";
+        }).join("") + "</ol></section>" +
+
+      (topDirectors.length ? '<section class="block"><div class="block-head"><h2>导演 Top 10</h2></div>' +
+        '<ol class="rank">' + topDirectors.map(function (d) {
+          return '<li><a href="#/d/' + enc(d) + '">' + esc(d) + '</a><span class="rc">' + directors[d] + "</span></li>";
+        }).join("") + "</ol></section>" : "");
     return html;
   }
 
@@ -321,7 +328,7 @@
     if (w.label) rows += '<div class="row"><b>厂牌</b>：' + chip("m", w.label) + "</div>";
     if (w.series) rows += '<div class="row"><b>系列</b>：' + chip("s", w.series) + "</div>";
     if (w.duration) rows += row("时长", w.duration + " 分钟");
-    if (w.director) rows += row("导演", w.director);
+    if (w.director) rows += '<div class="row"><b>导演</b>：' + chip("d", w.director) + "</div>";
     if (w.rating) rows += row("评分", "★ " + w.rating + (w.rating_count ? "（" + w.rating_count + " 评价）" : ""));
 
     // 标签优先显示构建期算好的中文标签 tags_zh（覆盖更广），labels 仍按原样
@@ -361,18 +368,19 @@
   }
 
   /* =================================================================
-     视图：筛选（标签 / 片商 / 系列）
+     视图：筛选（标签 / 片商 / 系列 / 导演）
      ================================================================= */
   function viewFilter(type, value) {
-    var label = { t: "标签", m: "片商 / 厂牌", s: "系列" }[type];
+    var label = { t: "标签", m: "片商 / 厂牌", s: "系列", d: "导演" }[type];
     var recs = WORKS.filter(function (r) {
       var w = r.w;
       if (type === "t") return (w.labels || []).concat(w.tags || [], w.tags_zh || []).indexOf(value) >= 0;
       if (type === "m") return w.maker === value || w.label === value;
       if (type === "s") return w.series === value;
+      if (type === "d") return (w.director || "") === value;
       return false;
     });
-    var head = (type === "t" ? "#/t/" : type === "m" ? "#/m/" : "#/s/") + enc(value);
+    var head = (type === "t" ? "#/t/" : type === "m" ? "#/m/" : type === "s" ? "#/s/" : "#/d/") + enc(value);
     return (
       '<div class="crumb"><a href="#/">首页</a> / ' + label + ' / <b>' + esc(value) + "</b></div>" +
       '<div class="block-head"><h2>' + esc(label) + "：" + esc(type === "t" ? tagName(value) : value) + "</h2>" +
@@ -427,6 +435,7 @@
     else if (main === "t") html = viewFilter("t", param);
     else if (main === "m") html = viewFilter("m", param);
     else if (main === "s") html = viewFilter("s", param);
+    else if (main === "d") html = viewFilter("d", param);
     else if (main === "q") html = viewSearch(param);
     else if (main === "stats") html = viewStats();
     else html = '<div class="empty">未知页面：' + esc(h) + "</div>";
@@ -459,6 +468,7 @@
     if (main === "m") return WORKS.filter(function (r) {
       return r.w.maker === param || r.w.label === param; });
     if (main === "s") return WORKS.filter(function (r) { return r.w.series === param; });
+    if (main === "d") return WORKS.filter(function (r) { return (r.w.director || "") === param; });
     if (main === "q") {
       var q = (param || "").trim().toLowerCase();
       if (!q) return WORKS.slice();
