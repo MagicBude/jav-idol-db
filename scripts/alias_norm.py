@@ -7,12 +7,15 @@
 
 设计原则（以 JavSP 别名表为准，整组合并 + 冲突告警）：
   · 楓カレン 与 田中レモン 确为同一人：JavSP 表以 田中レモン 为 canonical，把
-    楓カレン / 楓花戀 / 枫花恋 均列为其别名；中文习惯还称 枫可怜 / 楓可怜。
+    楓カレン / 楓花戀 / 枫花恋 均列为其别名。
   · 「整组 cluster 并入」：对精选女优 c，除取 c 作为 canonical key 的别名列表外，
     还把「把 c 列为别名」的每一个 canonical 的整组别名都并入，确保 田中レモン /
     田中檸檬 等不会因 c 不是 key 而被整组丢弃。
   · normalize_actress / actress_search_terms / expand_query：均基于上面的 cluster；
     同名若同时落入 ≥2 个精选 cluster，则视为 JavSP 表「真实误并」，仅告警、不自动合并。
+
+注：本模块不维护任何本地别名修正层；如需增删女优别名，直接改 data/actress/alias.json 数据源，
+而非在代码里打补丁。
 
 本模块只做数据查询，不修改任何源文件。
 """
