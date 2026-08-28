@@ -1,4 +1,4 @@
-"""番号（AV ID）归一化与类型识别（借鉴 JavSP avid.py 思路，独立实现）。
+"""番号（AV ID）归一化与类型识别（本仓库自有实现）。
 
 设计目标：不同写法指向同一部影片时，生成统一 key，用于匹配/去重。
   IPZ-380 / ipz380 / ipz00380 -> IPZ-380
@@ -6,8 +6,7 @@
 
 同时识别番号类型：normal / fc2 / getchu / gyutto / cid（DMM content id）。
 
-为什么不直接抄 JavSP：JavSP 是 GPL-3.0，本仓库 MIT，故仅借鉴其归一化
-规则（关键洞察：前导零保留 3 位以内、去除多余前导零），自行实现。
+本模块为番号归一化与类型识别的独立实现；关键规则：前导零保留 3 位以内、去除多余前导零。
 
 用法：
     from idnorm import normalize_id, guess_av_type

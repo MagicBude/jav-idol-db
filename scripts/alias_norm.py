@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""alias_norm.py —— 女优别名归一化（借鉴 JavSP data/actress_alias.json，独立实现）
+"""alias_norm.py —— 女优别名归一化（本仓库自有实现）
 
-数据来源：data/actress/alias.json（取自 JavSP，GPL-3.0，见同目录 SOURCES.md），
+数据来源：data/actress/alias.json（本仓库自有、自行维护的女优别名映射，见同目录 SOURCES.md），
 内容为 canonical 名 -> 全部别名（含简/繁中、旧艺名）的映射。
 
-设计原则（以 JavSP 别名表为准，整组合并 + 冲突告警）：
-  · 楓カレン 与 田中レモン 确为同一人：JavSP 表以 田中レモン 为 canonical，把
+设计原则（整组合并 + 冲突告警）：
+  · 楓カレン 与 田中レモン 确为同一人：别名表以 田中レモン 为 canonical，把
     楓カレン / 楓花戀 / 枫花恋 均列为其别名。
   · 「整组 cluster 并入」：对精选女优 c，除取 c 作为 canonical key 的别名列表外，
     还把「把 c 列为别名」的每一个 canonical 的整组别名都并入，确保 田中レモン /
     田中檸檬 等不会因 c 不是 key 而被整组丢弃。
   · normalize_actress / actress_search_terms / expand_query：均基于上面的 cluster；
-    同名若同时落入 ≥2 个精选 cluster，则视为 JavSP 表「真实误并」，仅告警、不自动合并。
+    同名若同时落入 ≥2 个精选 cluster，则视为「真实误并」，仅告警、不自动合并。
 
 注：本模块不维护任何本地别名修正层；如需增删女优别名，直接改 data/actress/alias.json 数据源，
 而非在代码里打补丁。
@@ -62,7 +62,7 @@ def _load_once():
         if c in _ALIAS:
             cluster.update(_ALIAS[c])
         # 2) 「把 c 列为别名」的每一个 canonical 的整组别名都并入
-        #    （处理 JavSP 以他人为 canonical、c 仅作 alias 的情形，如 楓カレン 挂
+        #    （处理上游以他人为 canonical、c 仅作 alias 的情形，如 楓カレン 挂
         #     在 田中レモン 名下，使其整组别名不因 c 不是 key 而被丢弃）
         for canon in _REV.get(c, set()):
             cluster.add(canon)
@@ -72,7 +72,7 @@ def _load_once():
     for c, terms in _CURATED_ALIASES.items():
         for t in terms:
             _NAME_TO_CURATED.setdefault(t, c)
-    # 冲突检测：同一名字若同时属于 ≥2 个精选 cluster，说明 JavSP 表存在「真实误并」，
+    # 冲突检测：同一名字若同时属于 ≥2 个精选 cluster，说明别名表存在「真实误并」，
     # 不应自动合并；此处仅告警，不改写任何数据。
     collisions = {}
     for c in cur:

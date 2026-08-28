@@ -32,14 +32,14 @@ import os
 import sys
 from datetime import datetime
 
-# 标签中文归一化（借鉴 JavSP 的 GenreMap 思路，独立实现于 genre_norm.py）
+# 标签中文归一化（实现于 genre_norm.py）
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 try:
     from genre_norm import normalize_tags as _norm_tags
 except Exception:  # pragma: no cover - 极端情况下缺失依赖也不阻断构建
     _norm_tags = None
 
-# 女优别名归一化（借鉴 JavSP 的 actress_alias.json，独立实现于 alias_norm.py）
+# 女优别名归一化（实现于 alias_norm.py）
 try:
     from alias_norm import normalize_actress, actress_search_terms
 except Exception:  # pragma: no cover
