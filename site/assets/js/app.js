@@ -179,6 +179,8 @@
           (DB.counts.works || WORKS.length) + " 部作品 · 支持中文 / 日文 / 英文检索，标签 / 片商 / 系列 一键筛选</p>" +
       "</section>" +
 
+      '<div class="quickrow"><a class="qlink" href="#/stats">资料库总览 / 统计 →</a></div>' +
+
       '<section class="block">' +
         '<div class="block-head"><h2>女优</h2><span class="muted">' + acts.length + " 位</span></div>" +
         '<div class="grid actress-grid">' + acts.map(actressCard).join("") + "</div>" +
@@ -204,6 +206,10 @@
     var a = null;
     DB.actresses.forEach(function (x) { if (x.name === name) a = x; });
     if (!a) return '<div class="empty">未找到女优：' + esc(name) + "</div>";
+    var ds = (a.works || []).map(function (w) { return (w.date || "").slice(0, 4); }).filter(Boolean).sort();
+    var span = ds.length ? (ds[0] + "–" + ds[ds.length - 1]) : "—";
+    var rs = (a.works || []).filter(function (w) { return w.rating; });
+    var avg = rs.length ? (rs.reduce(function (s, w) { return s + w.rating; }, 0) / rs.length).toFixed(1) : null;
     var recs = (a.works || []).map(function (w) { return BY_CODE[w.code] || { w: w, owner: a.name }; });
     return (
       '<div class="crumb"><a href="#/">首页</a> / 女优 / <b>' + esc(a.name) + "</b></div>" +
@@ -220,6 +226,8 @@
           (a.debut_year ? '<div class="row">出道：' + esc(a.debut_year) + " 年</div>" : "") +
           (a.agency ? '<div class="row">事务所：' + esc(a.agency) + "</div>" : "") +
           '<div class="row">作品数：' + (a.work_count || 0) + " 部</div>" +
+          (ds.length ? '<div class="row">活动年份：' + esc(span) + "</div>" : "") +
+          (avg ? '<div class="row">平均评分：★ ' + avg + "（" + rs.length + " 部评分）</div>" : "") +
         "</div>" +
       "</div>" +
       (a.bio ? '<section class="block bio-block"><div class="block-head"><h2>个人简介</h2></div><p class="synopsis">' + esc(a.bio) + "</p></section>" : "") +
@@ -230,8 +238,73 @@
   }
 
   /* =================================================================
-     视图：作品详情
+     视图：资料库总览统计
      ================================================================= */
+  function viewStats() {
+    var years = {}, makers = {}, tags = {};
+    var rated = 0, ratingSum = 0;
+    WORKS.forEach(function (r) {
+      var w = r.w;
+      var y = (w.date || "").slice(0, 4);
+      if (y) years[y] = (years[y] || 0) + 1;
+      if (w.maker) makers[w.maker] = (makers[w.maker] || 0) + 1;
+      (w.tags || []).forEach(function (t) { tags[t] = (tags[t] || 0) + 1; });
+      if (w.rating) { rated++; ratingSum += w.rating; }
+    });
+    var yearKeys = Object.keys(years).sort();
+    var yMin = yearKeys.length ? yearKeys[0] : "—";
+    var yMax = yearKeys.length ? yearKeys[yearKeys.length - 1] : "—";
+    var yMaxCount = yearKeys.length ? Math.max.apply(null, yearKeys.map(function (k) { return years[k]; })) : 1;
+
+    function topMap(obj, n) {
+      return Object.keys(obj).sort(function (a, b) { return obj[b] - obj[a]; }).slice(0, n);
+    }
+    function barRow(k, v, max) {
+      var pct = max ? Math.round(v / max * 100) : 0;
+      return '<div class="bar-row"><span class="bar-lbl">' + esc(k) + '</span>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%"></div></div>' +
+        '<span class="bar-val">' + v + "</span></div>";
+    }
+
+    var topMakers = topMap(makers, 15);
+    var topTags = topMap(tags, 24);
+    var actressRank = DB.actresses.slice().sort(function (a, b) {
+      return (b.works ? b.works.length : 0) - (a.works ? a.works.length : 0);
+    }).slice(0, 15);
+
+    var html =
+      '<section class="hero"><h1>资料库总览</h1>' +
+        '<p class="lead">' + (DB.counts.actresses || DB.actresses.length) + " 位女优 · " +
+          WORKS.length + " 部作品 · 跨 " + yMin + "–" + yMax + " 年</p></section>" +
+
+      '<section class="block stats-grid">' +
+        '<div class="stat-card"><div class="num">' + (DB.counts.actresses || DB.actresses.length) + '</div><div class="lbl">女优</div></div>' +
+        '<div class="stat-card"><div class="num">' + WORKS.length + '</div><div class="lbl">作品</div></div>' +
+        '<div class="stat-card"><div class="num">' + rated + '</div><div class="lbl">已评分作品</div></div>' +
+        '<div class="stat-card"><div class="num">' + (rated ? (ratingSum / rated).toFixed(1) : "—") + '</div><div class="lbl">平均评分</div></div>' +
+      "</section>" +
+
+      '<section class="block"><div class="block-head"><h2>逐年发行量</h2></div>' +
+        '<div class="bars">' + yearKeys.map(function (k) { return barRow(k, years[k], yMaxCount); }).join("") + "</div></section>" +
+
+      '<section class="block"><div class="block-head"><h2>片商 Top 15</h2></div>' +
+        '<ol class="rank">' + topMakers.map(function (m) {
+          return '<li><a href="#/m/' + enc(m) + '">' + esc(m) + '</a><span class="rc">' + makers[m] + "</span></li>";
+        }).join("") + "</ol></section>" +
+
+      '<section class="block"><div class="block-head"><h2>标签 Top 24</h2></div>' +
+        '<div class="chipcloud">' + topTags.map(function (t) { return chip("t", t); }).join("") + "</div></section>" +
+
+      '<section class="block"><div class="block-head"><h2>女优作品量 Top 15</h2></div>' +
+        '<ol class="rank">' + actressRank.map(function (a) {
+          return '<li><a href="#/a/' + enc(a.name) + '">' + esc(actressName(a.name)) + '</a><span class="rc">' + (a.works ? a.works.length : 0) + "</span></li>";
+        }).join("") + "</ol></section>";
+    return html;
+  }
+
+  /* =================================================================
+      视图：作品详情
+      ================================================================= */
   function viewWork(code) {
     var rec = BY_CODE[code];
     if (!rec) return '<div class="empty">未找到作品：' + esc(code) + "</div>";
@@ -355,6 +428,7 @@
     else if (main === "m") html = viewFilter("m", param);
     else if (main === "s") html = viewFilter("s", param);
     else if (main === "q") html = viewSearch(param);
+    else if (main === "stats") html = viewStats();
     else html = '<div class="empty">未知页面：' + esc(h) + "</div>";
 
     app.innerHTML = html;
