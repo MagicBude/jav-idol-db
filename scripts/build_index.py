@@ -39,6 +39,13 @@ try:
 except Exception:  # pragma: no cover - 极端情况下缺失依赖也不阻断构建
     _norm_tags = None
 
+# 女优别名归一化（借鉴 JavSP 的 actress_alias.json，独立实现于 alias_norm.py）
+try:
+    from alias_norm import normalize_actress, actress_search_terms
+except Exception:  # pragma: no cover
+    normalize_actress = None
+    actress_search_terms = None
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ACTRESSES_DIR = os.path.join(BASE, "data", "actresses")
 WORKS_DIR = os.path.join(BASE, "data", "works")
@@ -120,6 +127,17 @@ def load_works():
         # 构建期派生：中文标签（不写回源文件，保持 data/works 干净）
         if _norm_tags is not None and "tags_zh" not in w:
             w["tags_zh"] = _norm_tags(w.get("tags") or [])
+        # 构建期派生：女优别名归一化 + 搜索别名（不写回源文件）
+        if normalize_actress is not None:
+            raw = w.get("actress")
+            if isinstance(raw, str) and raw:
+                n = normalize_actress(raw)
+                if n != raw:
+                    w["actress"] = n
+                if actress_search_terms is not None:
+                    terms = set(actress_search_terms(n))
+                    if terms:
+                        w["actress_search"] = sorted(terms)
         works[c] = w
     return works, dropped
 

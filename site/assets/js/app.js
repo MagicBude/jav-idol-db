@@ -38,6 +38,7 @@
     var o = r.owner || "";
     if (o.toLowerCase().indexOf(q) >= 0) return true;
     if ((ACTRESS_ZH[o] || "").toLowerCase().indexOf(q) >= 0) return true;
+    if ((w.actress_search || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; })) return true;
     if ((w.maker || "").toLowerCase().indexOf(q) >= 0) return true;
     if ((w.label || "").toLowerCase().indexOf(q) >= 0) return true;
     if ((w.series || "").toLowerCase().indexOf(q) >= 0) return true;
