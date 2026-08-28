@@ -121,6 +121,11 @@ python scripts/update_metadata.py --pending --hard      # 多源回补(含 javbu
 2. 之后每次 push 到 `main`，`.github/workflows/deploy.yml` 会自动跑 `build_index.py` 并部署
    （无需手动构建，CI 保证线上与 `data/` 一致）。
 
+## 标签中文化与番号归一化
+
+- **标签中文化**：构建期（`build_index.py`）调用 `scripts/genre_norm.py`，把每部作品 `tags`（多为日文/英文裸标签）翻译、归一化为中文 `tags_zh`，写入索引；站点优先展示中文标签。映射表来自多源 genre 数据（`data/genre/`，取自 JavSP，GPL-3.0，见 `SOURCES.md`），并以本仓库 `data/zh.json` 的 `tag_zh`（人工维护简中）优先覆盖。当前约 82.9% 的标签可映射为中文。
+- **番号归一化**：`scripts/idnorm.py` 提供 `normalize_id()`（大小写/分隔符归一、>3 位去多余前导零、<=3 位保留）与 `guess_av_type()`（normal/fc2/getchu/gyutto/cid），用于番号匹配/去重，已带单测 `tests/test_idnorm.py`。（借鉴 JavSP `avid.py` 思路，独立实现以规避 GPL 传染。）
+
 ## 合规说明
 
 - 图片仅热链**宣传 / 封面类肖像**（DMM 图床），**不下载、不入库**，遵守 GitHub ToS。

@@ -32,6 +32,13 @@ import os
 import sys
 from datetime import datetime
 
+# 标签中文归一化（借鉴 JavSP 的 GenreMap 思路，独立实现于 genre_norm.py）
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+try:
+    from genre_norm import normalize_tags as _norm_tags
+except Exception:  # pragma: no cover - 极端情况下缺失依赖也不阻断构建
+    _norm_tags = None
+
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ACTRESSES_DIR = os.path.join(BASE, "data", "actresses")
 WORKS_DIR = os.path.join(BASE, "data", "works")
@@ -110,6 +117,9 @@ def load_works():
         if not c:
             dropped.append((os.path.basename(fp), "缺 code 字段"))
             continue
+        # 构建期派生：中文标签（不写回源文件，保持 data/works 干净）
+        if _norm_tags is not None and "tags_zh" not in w:
+            w["tags_zh"] = _norm_tags(w.get("tags") or [])
         works[c] = w
     return works, dropped
 

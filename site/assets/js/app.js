@@ -44,6 +44,7 @@
     if ((w.tags || []).some(function (t) {
       return t.toLowerCase().indexOf(q) >= 0 || (TAG_ZH[t] || "").toLowerCase().indexOf(q) >= 0;
     })) return true;
+    if ((w.tags_zh || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; })) return true;
     return false;
   }
 
@@ -245,7 +246,11 @@
     if (w.director) rows += row("导演", w.director);
     if (w.rating) rows += row("评分", "★ " + w.rating + (w.rating_count ? "（" + w.rating_count + " 评价）" : ""));
 
-    var tagHtml = chips("t", (w.labels || []).concat(w.tags || []));
+    // 标签优先显示构建期算好的中文标签 tags_zh（覆盖更广），labels 仍按原样
+    var tagList = (w.labels || []).concat(
+      (w.tags_zh && w.tags_zh.length) ? w.tags_zh : (w.tags || [])
+    );
+    var tagHtml = chips("t", tagList);
 
     // 外部链接
     var ext = "";
@@ -284,7 +289,7 @@
     var label = { t: "标签", m: "片商 / 厂牌", s: "系列" }[type];
     var recs = WORKS.filter(function (r) {
       var w = r.w;
-      if (type === "t") return (w.labels || []).concat(w.tags || []).indexOf(value) >= 0;
+      if (type === "t") return (w.labels || []).concat(w.tags || [], w.tags_zh || []).indexOf(value) >= 0;
       if (type === "m") return w.maker === value || w.label === value;
       if (type === "s") return w.series === value;
       return false;
@@ -371,7 +376,7 @@
       return (a ? a.works : []).map(function (w) { return BY_CODE[w.code] || { w: w }; });
     }
     if (main === "t") return WORKS.filter(function (r) {
-      return (r.w.labels || []).concat(r.w.tags || []).indexOf(param) >= 0; });
+      return (r.w.labels || []).concat(r.w.tags || [], r.w.tags_zh || []).indexOf(param) >= 0; });
     if (main === "m") return WORKS.filter(function (r) {
       return r.w.maker === param || r.w.label === param; });
     if (main === "s") return WORKS.filter(function (r) { return r.w.series === param; });
