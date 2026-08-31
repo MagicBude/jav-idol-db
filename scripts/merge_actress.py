@@ -50,6 +50,11 @@ try:
 except Exception:  # pragma: no cover - 极端缺依赖时不阻断，退化为原名
     normalize_actress = lambda n: n
     actress_search_terms = lambda n: [n]
+try:
+    from actress_status import status_label
+except Exception:  # pragma: no cover
+    def status_label(code, lang="zh"):
+        return code or ""
 
 # 非个人女优的特殊归属（合集厂牌 / 无主聚合桶），alias_norm 里同样被排除出精选集合
 _SPECIAL = {
@@ -60,11 +65,12 @@ _SPECIAL = {
 # 无女优归属的作品归入此聚合桶（与站点 build_index.py 的 OTHER 口径保持一致）
 _OTHER = "其他作品"
 
-# CSV 列（内部字段名）
+# CSV 列（内部字段名）—— 新增 status 系列（在役/引退/出道/引退/复出）
 FIELDS = [
-    "name", "name_zh", "type", "aliases",
+    "name", "name_zh", "type", "status", "status_zh", "aliases",
     "work_count", "first_work", "latest_work",
-    "debut_year", "birthdate", "height", "cup", "measurements",
+    "debut_year", "debut_date", "retire_date", "comeback_date", "status_source",
+    "birthdate", "height", "cup", "measurements",
     "birthplace", "blood_type", "agency",
     "bio", "avatar", "source", "updated_at", "note",
 ]
@@ -164,12 +170,15 @@ def merge():
         r["name"] = name
         r["name_zh"] = name_zh.get(name, "")
         r["type"] = "女优" if not note else "合集厂牌" if "合集" in note else "聚合桶"
+        r["status"] = _s(p.get("status")) or "unknown"
+        r["status_zh"] = status_label(p.get("status")) or "不明"
         r["aliases"] = ";".join(_aliases_of(name))
         r["work_count"] = st.get("work_count", 0)
         r["first_work"] = st.get("first_work", "")
         r["latest_work"] = st.get("latest_work", "")
         # 档案字段：缺档案时整列留空，表里一眼能看出「这位还没建档案」
-        for k in ("debut_year", "birthdate", "height", "cup", "measurements",
+        for k in ("debut_year", "debut_date", "retire_date", "comeback_date",
+                  "status_source", "birthdate", "height", "cup", "measurements",
                   "birthplace", "blood_type", "agency", "bio", "avatar",
                   "source", "updated_at"):
             r[k] = _s(p.get(k))
@@ -220,11 +229,17 @@ def write_xlsx(rows):
         ("name", "女优名 (日文)"),
         ("name_zh", "中文名"),
         ("type", "类型"),
+        ("status", "状态"),
+        ("status_zh", "状态(中)"),
         ("aliases", "别名"),
         ("work_count", "作品数"),
         ("first_work", "首作"),
         ("latest_work", "最新作"),
         ("debut_year", "出道年"),
+        ("debut_date", "出道日期"),
+        ("retire_date", "引退日期"),
+        ("comeback_date", "复出日期"),
+        ("status_source", "状态来源"),
         ("birthdate", "生日"),
         ("height", "身高(cm)"),
         ("cup", "罩杯"),
@@ -265,8 +280,9 @@ def write_xlsx(rows):
 
     n_flag = 0
     for ridx, r in enumerate(rows, start=2):
-        # 需要关注 = 非个人女优（合集厂牌/聚合桶）或 完全没有档案
-        need = (r.get("type") != "女优") or (not r.get("source"))
+        # 需要关注 = 非个人女优（合集厂牌/聚合桶）/完全没有档案/状态未知需核查
+        need = ((r.get("type") != "女优") or (not r.get("source"))
+                or (r.get("type") == "女优" and r.get("status") == "unknown"))
         if need:
             n_flag += 1
             fill = NEEDED
@@ -285,7 +301,9 @@ def write_xlsx(rows):
             cell = ws.cell(row=ridx, column=c, value=v)
             cell.font = BODY_FONT
             cell.border = BORDER
-            cell.alignment = CENTER if c in (3, 5, 6, 7, 8, 9, 10, 11, 13, 17, 18, 19) else LEFT
+            cell.alignment = CENTER if c in (
+                3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 19, 23, 24, 25
+            ) else LEFT
             if fill:
                 cell.fill = fill
             # 头像列：有链接就做成可点击超链接，显示为「查看」
@@ -298,7 +316,8 @@ def write_xlsx(rows):
     ws.auto_filter.ref = "A1:%s%d" % (get_column_letter(ncol), len(rows) + 1)
     ws.sheet_view.showGridLines = False
     for i, width in enumerate(
-            [16, 14, 10, 30, 8, 12, 12, 9, 12, 9, 7, 16, 12, 7, 18, 46, 8, 12, 12, 26],
+            [16, 14, 9, 9, 9, 30, 8, 12, 12, 9, 12, 12, 12, 13, 12, 9, 7, 16,
+             12, 7, 18, 46, 8, 12, 12, 26],
             start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
     ws.row_dimensions[1].height = 26
@@ -319,6 +338,9 @@ def write_xlsx(rows):
         ("  别名         —— 同一人的其他艺名（简繁中、旧艺名），来自 alias.json 整组 cluster", False),
         ("  作品数 / 首作 / 最新作 —— 由 data/works 实时统计，口径与站点分组一致", False),
         ("  出道年 ~ 事务所 —— 来自 data/actresses/<名>/profile.json 的档案字段", False),
+        ("  状态 / 状态(中) —— 在役 / 引退 / 休业，来自 profile.status（抓取来源见「状态来源」列）", False),
+        ("  出道日期 / 引退日期 / 复出日期 —— 来自 profile 的 debut_date / retire_date / comeback_date", False),
+        ("  状态来源      —— wikipedia-ja / avjoho / researched 等，标记状态信息出处，便于人工复核", False),
         ("  头像         —— 点击「查看」直接打开图片链接", False),
         ("  数据来源      —— researched 表示人工核查过的档案；空表示尚未建档", False),
         ("", False),

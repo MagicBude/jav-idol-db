@@ -98,6 +98,10 @@
       f_measure: "スリーサイズ",
       f_debut: "デビュー",
       f_agency: "事務所",
+      f_status: "ステータス",
+      f_retire: "引退日",
+      f_comeback: "復帰日",
+      f_status_src: "状態出典",
       f_works: "作品数",
       f_span: "活動年",
       f_avg: "平均評価",
@@ -165,6 +169,10 @@
       f_measure: "三围",
       f_debut: "出道",
       f_agency: "事务所",
+      f_status: "状态",
+      f_retire: "引退日期",
+      f_comeback: "复出日期",
+      f_status_src: "状态来源",
       f_works: "作品数",
       f_span: "活动年份",
       f_avg: "平均评分",
@@ -191,6 +199,19 @@
       err_page: "未知页面："
     }
   };
+
+  // 女优状态代码 -> 显示名（与 scripts/actress_status.py 的 STATUS_LABELS 保持一致）
+  var ACTRESS_STATUS = {
+    active:  { ja: "現役",     zh: "在役" },
+    retired: { ja: "引退",     zh: "引退" },
+    hiatus:  { ja: "活動休止", zh: "休业" },
+    unknown: { ja: "不明",     zh: "不明" }
+  };
+  function statusText(code) {
+    var m = ACTRESS_STATUS[code || "unknown"] || ACTRESS_STATUS.unknown;
+    return (m[LANG] || m.zh);
+  }
+  function statusClass(code) { return "st-" + (code || "unknown"); }
 
   // 取 UI 文案：当前语言优先，缺省回退中文
   function T(key) {
@@ -418,14 +439,18 @@
         '<div class="avatar">' + imgTag(a.avatar, a.name) + (a.avatar ? "" : esc(actressName(a.name))) + "</div>" +
         "<div class=\"pinfo\">" +
           "<h1>" + esc(actressName(a.name)) + "</h1>" +
+          '<span class="status-badge ' + statusClass(a.status) + '">' + esc(statusText(a.status)) + '</span>' +
           (a.aliases && a.aliases.length ? '<div class="row">' + esc(T("f_aliases")) + '：' + a.aliases.map(esc).join("、") + "</div>" : "") +
           (a.birthdate ? '<div class="row">' + esc(T("f_birth")) + '：' + esc(a.birthdate) + "</div>" : "") +
           (a.birthplace ? '<div class="row">' + esc(T("f_birthplace")) + '：' + esc(a.birthplace) + "</div>" : "") +
           (a.blood_type ? '<div class="row">' + esc(T("f_blood")) + '：' + esc(a.blood_type) + "</div>" : "") +
           (a.height ? '<div class="row">' + esc(T("f_height")) + "：" + esc(a.height) + " cm</div>" : "") +
           (a.measurements ? '<div class="row">' + esc(T("f_measure")) + '：' + esc(a.measurements) + (a.cup ? "（" + esc(a.cup) + "杯）" : "") + "</div>" : "") +
-          (a.debut_year ? '<div class="row">' + esc(T("f_debut")) + "：" + esc(a.debut_year) + " 年</div>" : "") +
+          (a.debut_date ? '<div class="row">' + esc(T("f_debut")) + "：" + esc(a.debut_date) + "</div>" : (a.debut_year ? '<div class="row">' + esc(T("f_debut")) + "：" + esc(a.debut_year) + " 年</div>" : "")) +
+          (a.retire_date ? '<div class="row">' + esc(T("f_retire")) + "：" + esc(a.retire_date) + "</div>" : "") +
+          (a.comeback_date ? '<div class="row">' + esc(T("f_comeback")) + "：" + esc(a.comeback_date) + "</div>" : "") +
           (a.agency ? '<div class="row">' + esc(T("f_agency")) + '：' + esc(a.agency) + "</div>" : "") +
+          (a.status_source ? '<div class="row">' + esc(T("f_status_src")) + "：" + esc(a.status_source) + "</div>" : "") +
           '<div class="row">' + esc(T("f_works")) + "：" + (a.work_count || 0) + " " + esc(T("f_works")) + "</div>" +
           (ds.length ? '<div class="row">' + esc(T("f_span")) + "：" + esc(span) + "</div>" : "") +
           (avg ? '<div class="row">' + esc(T("f_avg")) + "：★ " + avg + "（" + rs.length + " " + esc(T("f_works")) + "）</div>" : "") +
