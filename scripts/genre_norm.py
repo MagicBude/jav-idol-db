@@ -19,6 +19,7 @@ genre 映射表（见 SOURCES.md），把裸标签翻译、归一化为中文。
 import csv
 import json
 import os
+import zhconv  # 繁->简兜底，统一中文视图用字
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _GENRE_DIR = os.path.join(_HERE, "..", "data", "genre")
@@ -105,6 +106,11 @@ def normalize_tags(raw_tags):
         zh = _MAP.get(t, t)  # 未命中则保留原文
         if not zh:
             continue  # 被标记为删除
+        # 兜底：无论命中与否，统一将繁体（中文繁体 / 日文旧字体汉字）规范为简体字形，
+        # 杜绝中文视图出现「简体女优名 + 繁体标签」混排。纯英文 / 数字 / 假名不受影响。
+        simp = zhconv.convert(zh, "zh-cn")
+        if simp != zh:
+            zh = simp
         if zh in seen:
             continue
         seen.add(zh)
