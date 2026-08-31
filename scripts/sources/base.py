@@ -42,6 +42,18 @@ from abc import ABC, abstractmethod
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 
 
+def human_mode():
+    """人工介入模式开关。置环境变量 JAV_HUMAN=1 开启。
+
+    开启后：
+    - 无头浏览器改为「有头」（可见窗口），方便用户手动操作；
+    - 遇到 Cloudflare 等自动化过不去的验证码时，wait_past_cf 会暂停并提示
+      用户在弹出的浏览器里完成验证，按 Enter 后继续抓取。
+    年龄确认墙（はい、私は18歳以上です）不受影响——click_age_gate 本就自动点，
+    无需人工。"""
+    return os.environ.get("JAV_HUMAN") == "1"
+
+
 def canon_code(code):
     """把各种写法归一为标准番号：大写、规范分隔符、保留数字原样（不补零/不去零）。
     例：ipx-005 -> IPX-005；IPX005 -> IPX-005；SNOS-3 -> SNOS-3；1stars00145 -> 1STARS-00145。"""
@@ -74,34 +86,40 @@ def upgrade_cover_url(url):
     return u
 
 
-def launch_chrome(no_proxy=None):
+def launch_chrome(no_proxy=None, headless=None):
     """启动系统 Chrome（channel='chrome'），返回 (playwright, browser)。
     不下载 chromium，直接用已安装的 Chrome。
 
     no_proxy 默认读环境变量 JAV_NO_PROXY：沙箱直连测试时置 1；
-    用户本机默认走系统代理（CF 信任的出口），与 break_cf.py 一致。"""
+    用户本机默认走系统代理（CF 信任的出口），与 break_cf.py 一致。
+    headless 默认 True；JAV_HUMAN=1 时自动转有头（可见窗口供人工操作）。"""
     if no_proxy is None:
         no_proxy = os.environ.get("JAV_NO_PROXY") == "1"
+    if headless is None:
+        headless = not human_mode()
     from playwright.sync_api import sync_playwright
     p = sync_playwright().start()
     args = ["--no-sandbox"]
     if no_proxy:
         args.append("--no-proxy-server")
-    browser = p.chromium.launch(channel="chrome", headless=True, args=args)
+    browser = p.chromium.launch(channel="chrome", headless=headless, args=args)
     return p, browser
 
 
-def run_with_browser(fn, locale="ja-JP", no_proxy=None):
+def run_with_browser(fn, locale="ja-JP", no_proxy=None, headless=None):
     """用系统 Chrome 跑一段 Playwright 逻辑（context-manager 模式，最稳）。
-    fn(page) 返回抓取结果或抛异常。自动关闭浏览器。"""
+    fn(page) 返回抓取结果或抛异常。自动关闭浏览器。
+    headless 默认 True；JAV_HUMAN=1 时自动转有头。"""
     if no_proxy is None:
         no_proxy = os.environ.get("JAV_NO_PROXY") == "1"
+    if headless is None:
+        headless = not human_mode()
     from playwright.sync_api import sync_playwright
     args = ["--no-sandbox"]
     if no_proxy:
         args.append("--no-proxy-server")
     with sync_playwright() as p:
-        browser = p.chromium.launch(channel="chrome", headless=True, args=args)
+        browser = p.chromium.launch(channel="chrome", headless=headless, args=args)
         ctx = browser.new_context(locale=locale)
         page = ctx.new_page()
         try:
@@ -134,9 +152,17 @@ def click_age_gate(page):
     return False
 
 
-def wait_past_cf(page, ready_locator, timeout=45000):
-    """轮询等待 Cloudflare 放行 + 年龄墙点击，直到 ready_locator 出现。"""
+def wait_past_cf(page, ready_locator, timeout=45000, human=None):
+    """轮询等待 Cloudflare 放行 + 年龄墙点击，直到 ready_locator 出现。
+
+    human：是否允许人工介入。默认 None 时跟随 human_mode()（JAV_HUMAN=1）。
+    当轮询超时 CF 仍未放行：
+      - human=False：直接返回 False（该源放弃，交给下一源/标记 pending）；
+      - human=True ：暂停并提示用户在弹出的浏览器里手动完成验证，按 Enter
+        后继续轮询一小段，仍失败才返回 False。"""
     import time
+    if human is None:
+        human = human_mode()
     steps = max(1, int(timeout / 1500))
     for _ in range(steps):
         try:
@@ -153,6 +179,25 @@ def wait_past_cf(page, ready_locator, timeout=45000):
                 pass
         click_age_gate(page)
         page.wait_for_timeout(1500)
+    # 轮询结束仍未放行
+    if human:
+        try:
+            page_title = page.title()
+        except Exception:
+            page_title = "(无法读取标题)"
+        input(
+            "\n⏸ Cloudflare 验证尚未通过。请在已经打开的浏览器窗口中手动完成验证"
+            f"（当前页面标题：{page_title}），\n   完成后回到此处按 Enter 键继续…"
+        )
+        # 用户手动操作后再次轮询一小段
+        for _ in range(20):
+            try:
+                if ready_locator.count():
+                    return True
+            except Exception:
+                pass
+            click_age_gate(page)
+            page.wait_for_timeout(1500)
     try:
         return ready_locator.count() > 0
     except Exception:
