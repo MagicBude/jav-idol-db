@@ -84,6 +84,39 @@ def _load_once():
     _LOADED = True
 
 
+def translate_aligned(raw_tags):
+    """与 raw_tags 严格 1:1 等长、同序的中文翻译数组。
+
+    用于构建 data.js 的 tags_zh，必须与原始 tags 位置对齐，
+    否则前端按 index 并行 zip（tags[i] <-> tags_zh[i]）会把
+    邻居的中文翻译错配到别的标签上（如「近親相姦」错位成「罵倒」）。
+
+    规则：
+    - 不丢、不减、不去重：每个原始标签都对应一个输出位。
+    - 命中映射 -> 中文；未命中 / 映射为空(应删除标签) -> 保留原文。
+    - 末尾统一繁->简字形兜底（纯英文/数字/假名不受影响）。
+    """
+    _load_once()
+    if not raw_tags:
+        return []
+    out = []
+    for t in raw_tags:
+        if not isinstance(t, str):
+            t = str(t)
+        t = t.strip()
+        if not t:
+            out.append("")
+            continue
+        zh = _MAP.get(t, t)  # 未命中则保留原文
+        if not zh:
+            zh = t  # 标记为删除的标签：保留原文，维持对齐（避免数组变短错位）
+        simp = zhconv.convert(zh, "zh-cn")
+        if simp and simp != zh:
+            zh = simp
+        out.append(zh)
+    return out
+
+
 def normalize_tags(raw_tags):
     """把裸标签列表翻译、归一化为中文标签列表。
 
