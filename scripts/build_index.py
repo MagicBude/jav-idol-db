@@ -85,7 +85,7 @@ def load_zh():
         with open(ZH_JSON, encoding="utf-8") as f:
             return json.load(f)
     except Exception:
-        return {"actress_zh": {}, "tag_zh": {}}
+        return {"actress_zh": {}, "tag_zh": {}, "title_zh": {}}
 
 
 def load_json(path):
@@ -115,6 +115,8 @@ def load_works():
     dropped = []
     if not os.path.isdir(WORKS_DIR):
         return works, dropped
+    # 中文片名映射：code -> 中文片名（来自 data/zh.json 的 title_zh，缺省空）
+    title_zh_map = (load_zh().get("title_zh") or {})
     for fp in sorted(glob.glob(os.path.join(WORKS_DIR, "*.json"))):
         w = load_json(fp)
         if not w:
@@ -138,6 +140,9 @@ def load_works():
                     terms = set(actress_search_terms(n))
                     if terms:
                         w["actress_search"] = sorted(terms)
+        # 中文片名（可选，缺省不写，保留原文日文）
+        if title_zh_map.get(c):
+            w["title_zh"] = title_zh_map[c]
         works[c] = w
     return works, dropped
 

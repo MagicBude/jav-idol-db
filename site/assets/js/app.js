@@ -1,9 +1,12 @@
 /* ===================================================================
-   jav-idol-db 站点逻辑（中文 JAV 资料库 单页 SPA）
-   - 读取 window.JAV_DB（scripts/build_index.py 生成），含 zh 中文别名层
+   jav-idol-db 站点逻辑（资料库 单页 SPA，多语言：默认日本語，可切中文）
+   - 读取 window.JAV_DB（scripts/build_index.py 生成），含 zh 中文映射层
+   - 数据原文为日文（来源 codeav 等）；默认以日文显示，可一键切换中文。
+     中文显示依赖 data/zh.json 的 actress_zh / tag_zh（及可选的 title_zh）；
+     无对应中文映射时回退显示原文，绝不臆造。
    - hash 路由：#/ 首页 | #/a/<女优> | #/w/<番号> |
-                #/t/<标签> | #/m/<片商> | #/s/<系列> | #/q/<搜索>
-   - 标签 / 片商 / 系列 / 女优 全部可点，跳转筛选视图
+                #/t/<标签> | #/m/<片商> | #/s/<系列> | #/d/<导演> | #/q/<搜索> | #/stats
+   - 标签 / 片商 / 系列 / 女优 / 导演 全部可点，跳转筛选视图
    - 纯前端，file:// 双击或 GitHub Pages 均可运行
    =================================================================== */
 (function () {
@@ -12,21 +15,187 @@
   var DB = window.JAV_DB || { actresses: [], counts: {} };
   var ZH = (DB.zh || {});
   var ACTRESS_ZH = ZH.actress_zh || {};   // 日文女优名 -> 中文名
-  var TAG_ZH = ZH.tag_zh || {};            // 日文标签 -> 中文
+  var TAG_ZH = ZH.tag_zh || {};           // 日文标签 -> 中文
   // 反向映射：中文 -> 日文（用于中文搜索命中）
   var ZH_TO_JP_ACTRESS = {};
   Object.keys(ACTRESS_ZH).forEach(function (jp) { ZH_TO_JP_ACTRESS[ACTRESS_ZH[jp]] = jp; });
   var ZH_TO_JP_TAG = {};
   Object.keys(TAG_ZH).forEach(function (jp) { ZH_TO_JP_TAG[TAG_ZH[jp]] = jp; });
 
-  // 女优显示名：有中文则显示「中文（日文）」
-  function actressName(jp) {
-    var zh = ACTRESS_ZH[jp];
-    return zh ? (zh + "（" + jp + "）") : jp;
+  /* =================================================================
+     多语言层（默认日本語，可扩展到 en 等更多语言）
+     - LANG 持久化于 localStorage('lang')，缺省 'ja'
+     - UI[k] 为字符串或函数（函数接收计数/年份参数）
+     - 数据显示名（女优/标签/片名）由 actressName/tagName/workTitle 决定
+     ================================================================= */
+  var LANGS = ["ja", "zh"];
+  var LANG = "ja";
+  try { LANG = localStorage.getItem("lang") || "ja"; } catch (e) {}
+  if (LANGS.indexOf(LANG) < 0) LANG = "ja";
+
+  var UI = {
+    ja: {
+      search_ph: "番号 / タイトル / 女優 / タグ で検索…",
+      sort_label: "並び替え",
+      s_date_desc: "新着順",
+      s_date_asc: "古い順",
+      s_rating_desc: "評価順",
+      s_duration_desc: "長い順",
+      s_code_asc: "番号順",
+      home_title: "資料庫",
+      home_lead: function (a, w) {
+        return a + " 名の女優 · " + w + " 本の作品 · 番号 / タイトル / 女優 / タグ で検索、タグ / メーカー / シリーズ で絞り込み";
+      },
+      stats_link: "統計 / 概要 →",
+      actresses: "女優",
+      hot_tags: "人気タグ",
+      latest: "新着",
+      all_works: "すべての作品",
+      stats_title: "資料庫概要",
+      stats_lead: function (a, w, y0, y1) {
+        return a + " 名の女優 · " + w + " 本の作品 · " + y0 + "–" + y1 + " 年";
+      },
+      s_actresses: "女優",
+      s_works: "作品",
+      s_rated: "評価済み",
+      s_avg: "平均評価",
+      s_year: "年度別リリース数",
+      s_maker: "メーカー Top 15",
+      s_tag: "タグ Top 24",
+      s_actress_rank: "女優別作品数 Top 15",
+      s_director: "監督 Top 10",
+      crumb_actress: "女優",
+      crumb_all: "すべての作品",
+      crumb_search: "検索",
+      crumb_stats: "統計",
+      f_aliases: "別名",
+      f_birth: "誕生日",
+      f_birthplace: "出身地",
+      f_blood: "血液型",
+      f_height: "身長",
+      f_measure: "スリーサイズ",
+      f_debut: "デビュー",
+      f_agency: "事務所",
+      f_works: "作品数",
+      f_span: "活動年",
+      f_avg: "平均評価",
+      f_incomplete: "⚠️ この作品のデータが不完全です。不足：",
+      f_cast_date: "発売日",
+      f_cast: "出演",
+      f_maker: "メーカー",
+      f_label: "レーベル",
+      f_series: "シリーズ",
+      f_duration: "時間",
+      f_director: "監督",
+      f_rating: "評価",
+      f_synopsis: "あらすじ",
+      f_bio: "プロフィール",
+      flt_t: "タグ",
+      flt_m: "メーカー / レーベル",
+      flt_s: "シリーズ",
+      flt_d: "監督",
+      pending_title: "（タイトル未取得）",
+      badge_incomplete: "データ不足",
+      empty_works: "一致する作品がありません。",
+      err_work: "未找到作品：",
+      err_actress: "未找到女优：",
+      err_page: "未知页面："
+    },
+    zh: {
+      search_ph: "搜索 番号 / 片名 / 女优 / 标签…",
+      sort_label: "排序",
+      s_date_desc: "最新发行",
+      s_date_asc: "最早发行",
+      s_rating_desc: "评分最高",
+      s_duration_desc: "时长最长",
+      s_code_asc: "番号排序",
+      home_title: "资料库",
+      home_lead: function (a, w) {
+        return a + " 位女优 · " + w + " 部作品 · 支持番号 / 片名 / 女优 / 标签检索，标签 / 片商 / 系列 一键筛选";
+      },
+      stats_link: "资料库总览 / 统计 →",
+      actresses: "女优",
+      hot_tags: "热门标签",
+      latest: "最新发行",
+      all_works: "全部作品",
+      stats_title: "资料库总览",
+      stats_lead: function (a, w, y0, y1) {
+        return a + " 位女优 · " + w + " 部作品 · 跨 " + y0 + "–" + y1 + " 年";
+      },
+      s_actresses: "女优",
+      s_works: "作品",
+      s_rated: "已评分作品",
+      s_avg: "平均评分",
+      s_year: "逐年发行量",
+      s_maker: "片商 Top 15",
+      s_tag: "标签 Top 24",
+      s_actress_rank: "女优作品量 Top 15",
+      s_director: "导演 Top 10",
+      crumb_actress: "女优",
+      crumb_all: "全部作品",
+      crumb_search: "搜索",
+      crumb_stats: "统计",
+      f_aliases: "别名",
+      f_birth: "生日",
+      f_birthplace: "出身地",
+      f_blood: "血型",
+      f_height: "身高",
+      f_measure: "三围",
+      f_debut: "出道",
+      f_agency: "事务所",
+      f_works: "作品数",
+      f_span: "活动年份",
+      f_avg: "平均评分",
+      f_incomplete: "⚠️ 本作资料不全，缺失：",
+      f_cast_date: "发行日",
+      f_cast: "出演",
+      f_maker: "片商",
+      f_label: "厂牌",
+      f_series: "系列",
+      f_duration: "时长",
+      f_director: "导演",
+      f_rating: "评分",
+      f_synopsis: "剧情简介",
+      f_bio: "个人简介",
+      flt_t: "标签",
+      flt_m: "片商 / 厂牌",
+      flt_s: "系列",
+      flt_d: "导演",
+      pending_title: "（片名待抓取）",
+      badge_incomplete: "资料不全",
+      empty_works: "没有匹配的作品。",
+      err_work: "未找到作品：",
+      err_actress: "未找到女优：",
+      err_page: "未知页面："
+    }
+  };
+
+  // 取 UI 文案：当前语言优先，缺省回退中文
+  function T(key) {
+    var d = UI[LANG] || UI.zh;
+    var v = d[key];
+    if (v === undefined) v = (UI.zh || {})[key];
+    return v === undefined ? key : v;
   }
-  // 标签显示名：有中文则显示中文
+
+  /* ---- 显示名（随语言切换）---- */
+  // 女优：ja 显示原文；zh 显示「中文（日文）」
+  function actressName(jp) {
+    if (LANG === "zh") {
+      var zh = ACTRESS_ZH[jp];
+      return zh ? (zh + "（" + jp + "）") : jp;
+    }
+    return jp;
+  }
+  // 标签：ja 显示原文；zh 显示中文映射
   function tagName(jp) {
-    return TAG_ZH[jp] || jp;
+    if (LANG === "zh") return TAG_ZH[jp] || jp;
+    return jp;
+  }
+  // 片名：ja 显示原文；zh 优先显示 title_zh（由 zh.json 提供），缺失则原文
+  function workTitle(w) {
+    if (LANG === "zh" && w && w.title_zh) return w.title_zh;
+    return (w && w.title) || "";
   }
 
   // 中文感知搜索：q 已 lowercased；命中 番号/片名/女优(中或日)/厂牌/系列/标签(中或日)
@@ -34,18 +203,19 @@
     if (!q) return true;
     var w = r.w;
     if ((w.code || "").toLowerCase().indexOf(q) >= 0) return true;
-    if ((w.title || "").toLowerCase().indexOf(q) >= 0) return true;
+    var t = workTitle(w);
+    if (t && t.toLowerCase().indexOf(q) >= 0) return true;
     var o = r.owner || "";
     if (o.toLowerCase().indexOf(q) >= 0) return true;
     if ((ACTRESS_ZH[o] || "").toLowerCase().indexOf(q) >= 0) return true;
-    if ((w.actress_search || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; })) return true;
+    if ((w.actress_search || []).some(function (x) { return x.toLowerCase().indexOf(q) >= 0; })) return true;
     if ((w.maker || "").toLowerCase().indexOf(q) >= 0) return true;
     if ((w.label || "").toLowerCase().indexOf(q) >= 0) return true;
     if ((w.series || "").toLowerCase().indexOf(q) >= 0) return true;
-    if ((w.tags || []).some(function (t) {
-      return t.toLowerCase().indexOf(q) >= 0 || (TAG_ZH[t] || "").toLowerCase().indexOf(q) >= 0;
+    if ((w.tags || []).some(function (x) {
+      return x.toLowerCase().indexOf(q) >= 0 || (TAG_ZH[x] || "").toLowerCase().indexOf(q) >= 0;
     })) return true;
-    if ((w.tags_zh || []).some(function (t) { return t.toLowerCase().indexOf(q) >= 0; })) return true;
+    if ((w.tags_zh || []).some(function (x) { return x.toLowerCase().indexOf(q) >= 0; })) return true;
     return false;
   }
 
@@ -90,10 +260,10 @@
   };
   function sortControls(current) {
     var opts = [
-      ["date_desc", "最新发行"], ["date_asc", "最早发行"],
-      ["rating_desc", "评分最高"], ["duration_desc", "时长最长"], ["code_asc", "番号排序"]
+      ["date_desc", T("s_date_desc")], ["date_asc", T("s_date_asc")],
+      ["rating_desc", T("s_rating_desc")], ["duration_desc", T("s_duration_desc")], ["code_asc", T("s_code_asc")]
     ];
-    var html = '<div class="sortbar"><label>排序</label><select id="sortsel">';
+    var html = '<div class="sortbar"><label>' + T("sort_label") + '</label><select id="sortsel">';
     opts.forEach(function (o) {
       html += '<option value="' + o[0] + '"' + (o[0] === current ? " selected" : "") + ">" + o[1] + "</option>";
     });
@@ -105,8 +275,8 @@
   function workCard(rec) {
     var w = rec.w;
     var rating = w.rating ? '<span class="badge">★ ' + w.rating + "</span>" : "";
-    var incomplete = w.incomplete ? '<span class="badge warn">资料不全</span>' : "";
-    var title = w.title ? esc(w.title) : "（片名待抓取）";
+    var incomplete = w.incomplete ? '<span class="badge warn">' + T("badge_incomplete") + "</span>" : "";
+    var title = workTitle(w) ? esc(workTitle(w)) : T("pending_title");
     return (
       '<a class="card" href="#/w/' + enc(w.code) + '">' +
         '<div class="thumb">' +
@@ -133,7 +303,7 @@
           (a.avatar ? "" : '<span class="ph">' + esc(a.name) + "</span>") +
         "</div>" +
         '<div class="body"><div class="name">' + esc(actressName(a.name)) + "</div>" +
-        '<div class="sub">' + (a.work_count || 0) + " 部作品</div></div></a>"
+        '<div class="sub">' + (a.work_count || 0) + " " + T("f_works") + "</div></div></a>"
     );
   }
 
@@ -151,7 +321,7 @@
 
   /* ---- 网格容器 ---- */
   function gridHtml(recs) {
-    if (!recs.length) return '<div class="empty">没有匹配的作品。</div>';
+    if (!recs.length) return '<div class="empty">' + T("empty_works") + "</div>";
     return '<div class="grid">' + recs.map(workCard).join("") + "</div>";
   }
 
@@ -161,7 +331,6 @@
   function viewHome() {
     var acts = DB.actresses;
     var recent = WORKS.slice().sort(SORTERS.date_desc);
-    // 取最新 60 部
     var latest = recent.slice(0, 60);
 
     // 热门标签（按出现次数）
@@ -174,26 +343,25 @@
 
     return (
       '<section class="hero">' +
-        '<h1>JAV 中文资料库</h1>' +
-        '<p class="lead">' + (DB.counts.actresses || acts.length) + " 位女优 · " +
-          (DB.counts.works || WORKS.length) + " 部作品 · 支持中文 / 日文 / 英文检索，标签 / 片商 / 系列 一键筛选</p>" +
+        '<h1>' + esc(T("home_title")) + "</h1>" +
+        '<p class="lead">' + esc(T("home_lead")((DB.counts.actresses || acts.length), WORKS.length)) + "</p>" +
       "</section>" +
 
-      '<div class="quickrow"><a class="qlink" href="#/stats">资料库总览 / 统计 →</a></div>' +
+      '<div class="quickrow"><a class="qlink" href="#/stats">' + esc(T("stats_link")) + "</a></div>" +
 
       '<section class="block">' +
-        '<div class="block-head"><h2>女优</h2><span class="muted">' + acts.length + " 位</span></div>" +
+        '<div class="block-head"><h2>' + esc(T("actresses")) + '</h2><span class="muted">' + acts.length + " " + esc(T("actresses")) + "</span></div>" +
         '<div class="grid actress-grid">' + acts.map(actressCard).join("") + "</div>" +
       "</section>" +
 
       (hotTags.length ? '<section class="block">' +
-        '<div class="block-head"><h2>热门标签</h2></div>' +
+        '<div class="block-head"><h2>' + esc(T("hot_tags")) + "</h2></div>" +
         '<div class="chipcloud">' + hotTags.map(function (t) { return chip("t", t); }).join("") + "</div>" +
       "</section>" : "") +
 
       '<section class="block">' +
-        '<div class="block-head"><h2>最新发行</h2>' +
-          '<a class="more" href="#/q/">查看全部 →</a></div>' +
+        '<div class="block-head"><h2>' + esc(T("latest")) + "</h2>" +
+          '<a class="more" href="#/q/">' + esc(T("all_works")) + " →</a></div>" +
         gridHtml(latest) +
       "</section>"
     );
@@ -205,33 +373,33 @@
   function viewActress(name) {
     var a = null;
     DB.actresses.forEach(function (x) { if (x.name === name) a = x; });
-    if (!a) return '<div class="empty">未找到女优：' + esc(name) + "</div>";
+    if (!a) return '<div class="empty">' + esc(T("err_actress")) + esc(name) + "</div>";
     var ds = (a.works || []).map(function (w) { return (w.date || "").slice(0, 4); }).filter(Boolean).sort();
     var span = ds.length ? (ds[0] + "–" + ds[ds.length - 1]) : "—";
     var rs = (a.works || []).filter(function (w) { return w.rating; });
     var avg = rs.length ? (rs.reduce(function (s, w) { return s + w.rating; }, 0) / rs.length).toFixed(1) : null;
     var recs = (a.works || []).map(function (w) { return BY_CODE[w.code] || { w: w, owner: a.name }; });
     return (
-      '<div class="crumb"><a href="#/">首页</a> / 女优 / <b>' + esc(a.name) + "</b></div>" +
+      '<div class="crumb"><a href="#/">' + esc(T("home_title")) + '</a> / ' + esc(T("crumb_actress")) + " / <b>" + esc(a.name) + "</b></div>" +
       '<div class="profile">' +
         '<div class="avatar">' + imgTag(a.avatar, a.name) + (a.avatar ? "" : esc(actressName(a.name))) + "</div>" +
         "<div class=\"pinfo\">" +
           "<h1>" + esc(actressName(a.name)) + "</h1>" +
-          (a.aliases && a.aliases.length ? '<div class="row">别名：' + a.aliases.map(esc).join("、") + "</div>" : "") +
-          (a.birthdate ? '<div class="row">生日：' + esc(a.birthdate) + "</div>" : "") +
-          (a.birthplace ? '<div class="row">出身地：' + esc(a.birthplace) + "</div>" : "") +
-          (a.blood_type ? '<div class="row">血型：' + esc(a.blood_type) + "</div>" : "") +
-          (a.height ? '<div class="row">身高：' + esc(a.height) + " cm</div>" : "") +
-          (a.measurements ? '<div class="row">三围：' + esc(a.measurements) + (a.cup ? "（" + esc(a.cup) + "杯）" : "") + "</div>" : "") +
-          (a.debut_year ? '<div class="row">出道：' + esc(a.debut_year) + " 年</div>" : "") +
-          (a.agency ? '<div class="row">事务所：' + esc(a.agency) + "</div>" : "") +
-          '<div class="row">作品数：' + (a.work_count || 0) + " 部</div>" +
-          (ds.length ? '<div class="row">活动年份：' + esc(span) + "</div>" : "") +
-          (avg ? '<div class="row">平均评分：★ ' + avg + "（" + rs.length + " 部评分）</div>" : "") +
+          (a.aliases && a.aliases.length ? '<div class="row">' + esc(T("f_aliases")) + '：' + a.aliases.map(esc).join("、") + "</div>" : "") +
+          (a.birthdate ? '<div class="row">' + esc(T("f_birth")) + '：' + esc(a.birthdate) + "</div>" : "") +
+          (a.birthplace ? '<div class="row">' + esc(T("f_birthplace")) + '：' + esc(a.birthplace) + "</div>" : "") +
+          (a.blood_type ? '<div class="row">' + esc(T("f_blood")) + '：' + esc(a.blood_type) + "</div>" : "") +
+          (a.height ? '<div class="row">' + esc(T("f_height")) + "：" + esc(a.height) + " cm</div>" : "") +
+          (a.measurements ? '<div class="row">' + esc(T("f_measure")) + '：' + esc(a.measurements) + (a.cup ? "（" + esc(a.cup) + "杯）" : "") + "</div>" : "") +
+          (a.debut_year ? '<div class="row">' + esc(T("f_debut")) + "：" + esc(a.debut_year) + " 年</div>" : "") +
+          (a.agency ? '<div class="row">' + esc(T("f_agency")) + '：' + esc(a.agency) + "</div>" : "") +
+          '<div class="row">' + esc(T("f_works")) + "：" + (a.work_count || 0) + " " + esc(T("f_works")) + "</div>" +
+          (ds.length ? '<div class="row">' + esc(T("f_span")) + "：" + esc(span) + "</div>" : "") +
+          (avg ? '<div class="row">' + esc(T("f_avg")) + "：★ " + avg + "（" + rs.length + " " + esc(T("f_works")) + "）</div>" : "") +
         "</div>" +
       "</div>" +
-      (a.bio ? '<section class="block bio-block"><div class="block-head"><h2>个人简介</h2></div><p class="synopsis">' + esc(a.bio) + "</p></section>" : "") +
-      '<div class="block-head"><h2>作品</h2><span class="muted">' + recs.length + " 部</span></div>" +
+      (a.bio ? '<section class="block bio-block"><div class="block-head"><h2>' + esc(T("f_bio")) + '</h2></div><p class="synopsis">' + esc(a.bio) + "</p></section>" : "") +
+      '<div class="block-head"><h2>' + esc(T("actresses")) + " " + esc(T("f_works")) + '</h2><span class="muted">' + recs.length + " " + esc(T("f_works")) + "</span></div>" +
       sortControls("date_desc") +
       '<div id="gridwrap">' + gridHtml(recs.sort(SORTERS.date_desc)) + "</div>"
     );
@@ -275,34 +443,33 @@
     }).slice(0, 15);
 
     var html =
-      '<section class="hero"><h1>资料库总览</h1>' +
-        '<p class="lead">' + (DB.counts.actresses || DB.actresses.length) + " 位女优 · " +
-          WORKS.length + " 部作品 · 跨 " + yMin + "–" + yMax + " 年</p></section>" +
+      '<section class="hero"><h1>' + esc(T("stats_title")) + '</h1>' +
+        '<p class="lead">' + esc(T("stats_lead")((DB.counts.actresses || DB.actresses.length), WORKS.length, yMin, yMax)) + "</p></section>" +
 
       '<section class="block stats-grid">' +
-        '<div class="stat-card"><div class="num">' + (DB.counts.actresses || DB.actresses.length) + '</div><div class="lbl">女优</div></div>' +
-        '<div class="stat-card"><div class="num">' + WORKS.length + '</div><div class="lbl">作品</div></div>' +
-        '<div class="stat-card"><div class="num">' + rated + '</div><div class="lbl">已评分作品</div></div>' +
-        '<div class="stat-card"><div class="num">' + (rated ? (ratingSum / rated).toFixed(1) : "—") + '</div><div class="lbl">平均评分</div></div>' +
+        '<div class="stat-card"><div class="num">' + (DB.counts.actresses || DB.actresses.length) + '</div><div class="lbl">' + esc(T("s_actresses")) + '</div></div>' +
+        '<div class="stat-card"><div class="num">' + WORKS.length + '</div><div class="lbl">' + esc(T("s_works")) + '</div></div>' +
+        '<div class="stat-card"><div class="num">' + rated + '</div><div class="lbl">' + esc(T("s_rated")) + '</div></div>' +
+        '<div class="stat-card"><div class="num">' + (rated ? (ratingSum / rated).toFixed(1) : "—") + '</div><div class="lbl">' + esc(T("s_avg")) + '</div></div>' +
       "</section>" +
 
-      '<section class="block"><div class="block-head"><h2>逐年发行量</h2></div>' +
+      '<section class="block"><div class="block-head"><h2>' + esc(T("s_year")) + '</h2></div>' +
         '<div class="bars">' + yearKeys.map(function (k) { return barRow(k, years[k], yMaxCount); }).join("") + "</div></section>" +
 
-      '<section class="block"><div class="block-head"><h2>片商 Top 15</h2></div>' +
+      '<section class="block"><div class="block-head"><h2>' + esc(T("s_maker")) + '</h2></div>' +
         '<ol class="rank">' + topMakers.map(function (m) {
           return '<li><a href="#/m/' + enc(m) + '">' + esc(m) + '</a><span class="rc">' + makers[m] + "</span></li>";
         }).join("") + "</ol></section>" +
 
-      '<section class="block"><div class="block-head"><h2>标签 Top 24</h2></div>' +
+      '<section class="block"><div class="block-head"><h2>' + esc(T("s_tag")) + '</h2></div>' +
         '<div class="chipcloud">' + topTags.map(function (t) { return chip("t", t); }).join("") + "</div></section>" +
 
-      '<section class="block"><div class="block-head"><h2>女优作品量 Top 15</h2></div>' +
+      '<section class="block"><div class="block-head"><h2>' + esc(T("s_actress_rank")) + '</h2></div>' +
         '<ol class="rank">' + actressRank.map(function (a) {
           return '<li><a href="#/a/' + enc(a.name) + '">' + esc(actressName(a.name)) + '</a><span class="rc">' + (a.works ? a.works.length : 0) + "</span></li>";
         }).join("") + "</ol></section>" +
 
-      (topDirectors.length ? '<section class="block"><div class="block-head"><h2>导演 Top 10</h2></div>' +
+      (topDirectors.length ? '<section class="block"><div class="block-head"><h2>' + esc(T("s_director")) + '</h2></div>' +
         '<ol class="rank">' + topDirectors.map(function (d) {
           return '<li><a href="#/d/' + enc(d) + '">' + esc(d) + '</a><span class="rc">' + directors[d] + "</span></li>";
         }).join("") + "</ol></section>" : "");
@@ -310,31 +477,40 @@
   }
 
   /* =================================================================
-      视图：作品详情
-      ================================================================= */
+     视图：作品详情
+     ================================================================= */
   function viewWork(code) {
     var rec = BY_CODE[code];
-    if (!rec) return '<div class="empty">未找到作品：' + esc(code) + "</div>";
+    if (!rec) return '<div class="empty">' + esc(T("err_work")) + esc(code) + "</div>";
     var w = rec.w;
     var rows = "";
     var incompleteNote = "";
     if (w.incomplete) {
       var mf = (w.missing_fields || []).join("、") || "部分可选字段";
-      incompleteNote = '<div class="incomplete-note">⚠️ 本作资料不全，缺失：' + esc(mf) + "</div>";
+      incompleteNote = '<div class="incomplete-note">' + esc(T("f_incomplete")) + esc(mf) + "</div>";
     }
-    if (w.date) rows += row("发行日", w.date);
-    if (rec.owner) rows += '<div class="row"><b>女优</b>：<a href="#/a/' + enc(rec.owner) + '">' + esc(actressName(rec.owner)) + "</a></div>";
-    if (w.maker) rows += '<div class="row"><b>片商</b>：' + chip("m", w.maker) + "</div>";
-    if (w.label) rows += '<div class="row"><b>厂牌</b>：' + chip("m", w.label) + "</div>";
-    if (w.series) rows += '<div class="row"><b>系列</b>：' + chip("s", w.series) + "</div>";
-    if (w.duration) rows += row("时长", w.duration + " 分钟");
-    if (w.director) rows += '<div class="row"><b>导演</b>：' + chip("d", w.director) + "</div>";
-    if (w.rating) rows += row("评分", "★ " + w.rating + (w.rating_count ? "（" + w.rating_count + " 评价）" : ""));
+    if (w.date) rows += row(T("f_cast_date"), w.date);
+    var castList = (w.actresses && w.actresses.length) ? w.actresses : (rec.owner ? [rec.owner] : []);
+    if (castList.length) {
+      var castHtml = castList.map(function (n) {
+        return '<a href="#/a/' + enc(n) + '">' + esc(actressName(n)) + "</a>";
+      }).join("、");
+      rows += '<div class="row"><b>' + esc(T("f_cast")) + '：</b>' + castHtml + "</div>";
+    }
+    if (w.maker) rows += '<div class="row"><b>' + esc(T("f_maker")) + '：</b>' + chip("m", w.maker) + "</div>";
+    if (w.label) rows += '<div class="row"><b>' + esc(T("f_label")) + '：</b>' + chip("m", w.label) + "</div>";
+    if (w.series) rows += '<div class="row"><b>' + esc(T("f_series")) + '：</b>' + chip("s", w.series) + "</div>";
+    if (w.duration) rows += row(T("f_duration"), w.duration + " " + (LANG === "zh" ? "分钟" : "分"));
+    if (w.director) rows += '<div class="row"><b>' + esc(T("f_director")) + '：</b>' + chip("d", w.director) + "</div>";
+    if (w.rating) rows += row(T("f_rating"), "★ " + w.rating + (w.rating_count ? "（" + w.rating_count + (LANG === "zh" ? " 评价" : " 評価") + "）" : ""));
 
-    // 标签优先显示构建期算好的中文标签 tags_zh（覆盖更广），labels 仍按原样
-    var tagList = (w.labels || []).concat(
-      (w.tags_zh && w.tags_zh.length) ? w.tags_zh : (w.tags || [])
-    );
+    // 标签：ja 显示原文 tags；zh 优先中文 tags_zh
+    var tagList;
+    if (LANG === "zh") {
+      tagList = (w.labels || []).concat((w.tags_zh && w.tags_zh.length) ? w.tags_zh : (w.tags || []));
+    } else {
+      tagList = (w.labels || []).concat(w.tags || []);
+    }
     var tagHtml = chips("t", tagList);
 
     // 外部链接
@@ -347,14 +523,21 @@
       });
     }
     if (w.trailer) ext += '<a class="extbtn" href="' + esc(w.trailer) + '" target="_blank" rel="noopener">观看预告片 ▶</a>';
+    if (w.source_url) {
+      var srcLabel = w.source
+        ? (LANG === "zh" ? "在 " + w.source + " 查看" : w.source + " で見る")
+        : (LANG === "zh" ? "数据源" : "データソース");
+      ext += '<a class="extbtn" href="' + esc(w.source_url) + '" target="_blank" rel="noopener">' + esc(srcLabel) + " ↗</a>";
+    }
+    if (w.code) ext += '<a class="extbtn" href="https://www.dmm.co.jp/search/=/searchstr=' + enc(w.code) + '" target="_blank" rel="noopener">在 DMM 搜索 ↗</a>';
 
     return (
-      '<div class="crumb"><a href="#/">首页</a> / <a href="#/a/' + enc(rec.owner || "") + '">' +
+      '<div class="crumb"><a href="#/">' + esc(T("home_title")) + '</a> / <a href="#/a/' + enc(rec.owner || "") + '">' +
         esc(actressName(rec.owner || "未知")) + "</a> / <b>" + esc(w.code) + "</b></div>" +
       '<div class="detail">' +
         '<div class="poster">' + imgTag(w.cover, w.code) + (w.cover ? "" : esc(w.code)) + "</div>" +
         "<div class=\"dinfo\">" +
-          "<h1>" + (w.title ? esc(w.title) : esc(w.code)) + "</h1>" +
+          "<h1>" + (workTitle(w) ? esc(workTitle(w)) : esc(w.code)) + "</h1>" +
           '<div class="code">' + esc(w.code) + "</div>" +
           incompleteNote +
           rows +
@@ -362,7 +545,7 @@
           (ext ? '<div class="extwrap">' + ext + "</div>" : "") +
         "</div>" +
       "</div>" +
-      (w.synopsis ? '<section class="block"><div class="block-head"><h2>剧情简介</h2></div>' +
+      (w.synopsis ? '<section class="block"><div class="block-head"><h2>' + esc(T("f_synopsis")) + '</h2></div>' +
         '<p class="synopsis">' + esc(w.synopsis) + "</p></section>" : "")
     );
   }
@@ -371,7 +554,7 @@
      视图：筛选（标签 / 片商 / 系列 / 导演）
      ================================================================= */
   function viewFilter(type, value) {
-    var label = { t: "标签", m: "片商 / 厂牌", s: "系列", d: "导演" }[type];
+    var label = { t: T("flt_t"), m: T("flt_m"), s: T("flt_s"), d: T("flt_d") }[type];
     var recs = WORKS.filter(function (r) {
       var w = r.w;
       if (type === "t") return (w.labels || []).concat(w.tags || [], w.tags_zh || []).indexOf(value) >= 0;
@@ -382,9 +565,9 @@
     });
     var head = (type === "t" ? "#/t/" : type === "m" ? "#/m/" : type === "s" ? "#/s/" : "#/d/") + enc(value);
     return (
-      '<div class="crumb"><a href="#/">首页</a> / ' + label + ' / <b>' + esc(value) + "</b></div>" +
+      '<div class="crumb"><a href="#/">' + esc(T("home_title")) + '</a> / ' + esc(label) + " / <b>" + esc(value) + "</b></div>" +
       '<div class="block-head"><h2>' + esc(label) + "：" + esc(type === "t" ? tagName(value) : value) + "</h2>" +
-        '<span class="muted">' + recs.length + " 部</span></div>" +
+        '<span class="muted">' + recs.length + " " + esc(T("f_works")) + "</span></div>" +
       sortControls("date_desc") +
       '<div id="gridwrap">' + gridHtml(recs.sort(SORTERS.date_desc)) + "</div>"
     );
@@ -396,19 +579,18 @@
   function viewSearch(q) {
     q = (q || "").trim().toLowerCase();
     if (!q) {
-      // 无关键词：展示全部（按最新）
       var all = WORKS.slice().sort(SORTERS.date_desc);
       return (
-        '<div class="crumb"><a href="#/">首页</a> / 全部作品</div>' +
-        '<div class="block-head"><h2>全部作品</h2><span class="muted">' + all.length + " 部</span></div>" +
+        '<div class="crumb"><a href="#/">' + esc(T("home_title")) + '</a> / ' + esc(T("crumb_all")) + "</div>" +
+        '<div class="block-head"><h2>' + esc(T("all_works")) + '</h2><span class="muted">' + all.length + " " + esc(T("f_works")) + "</span></div>" +
         sortControls("date_desc") +
         '<div id="gridwrap">' + gridHtml(all) + "</div>"
       );
     }
     var recs = WORKS.filter(function (r) { return workMatchesQuery(r, q); });
     return (
-      '<div class="crumb"><a href="#/">首页</a> / 搜索：<b>' + esc(q) + "</b></div>" +
-      '<div class="block-head"><h2>搜索结果</h2><span class="muted">' + recs.length + " 部</span></div>" +
+      '<div class="crumb"><a href="#/">' + esc(T("home_title")) + '</a> / ' + esc(T("crumb_search")) + '：<b>' + esc(q) + "</b></div>" +
+      '<div class="block-head"><h2>' + esc(T("f_results")) + '</h2><span class="muted">' + recs.length + " " + esc(T("f_works")) + "</span></div>" +
       sortControls("date_desc") +
       '<div id="gridwrap">' + gridHtml(recs.sort(SORTERS.date_desc)) + "</div>"
     );
@@ -438,7 +620,7 @@
     else if (main === "d") html = viewFilter("d", param);
     else if (main === "q") html = viewSearch(param);
     else if (main === "stats") html = viewStats();
-    else html = '<div class="empty">未知页面：' + esc(h) + "</div>";
+    else html = '<div class="empty">' + esc(T("err_page")) + esc(h) + "</div>";
 
     app.innerHTML = html;
     window.scrollTo(0, 0);
@@ -449,7 +631,6 @@
       sel.addEventListener("change", function () {
         var wrap = $("gridwrap");
         if (!wrap) return;
-        // 重新取当前视图的 recs
         var recs = currentRecs(main, param);
         wrap.innerHTML = gridHtml(recs.sort(SORTERS[sel.value] || SORTERS.date_desc));
       });
@@ -477,6 +658,34 @@
     return WORKS.slice();
   }
 
+  /* ---- 语言切换 ---- */
+  function paintLangSwitch() {
+    var sw = $("langswitch");
+    if (!sw) return;
+    var btns = sw.querySelectorAll("button");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle("active", btns[i].getAttribute("data-lang") === LANG);
+    }
+  }
+  function applyLang(l) {
+    if (LANGS.indexOf(l) < 0) return;
+    LANG = l;
+    try { localStorage.setItem("lang", l); } catch (e) {}
+    if (document.documentElement) document.documentElement.lang = (l === "zh") ? "zh-CN" : "ja";
+    paintLangSwitch();
+    var sb = $("search");
+    if (sb) sb.placeholder = T("search_ph");
+    router();
+  }
+  function bindLang() {
+    var sw = $("langswitch");
+    if (!sw) return;
+    sw.addEventListener("click", function (e) {
+      var b = e.target.closest ? e.target.closest("button") : null;
+      if (b && b.getAttribute) applyLang(b.getAttribute("data-lang"));
+    });
+  }
+
   /* ---- 全局搜索框 ---- */
   function bindSearch() {
     var box = $("search");
@@ -491,10 +700,16 @@
 
   /* ---- 启动 ---- */
   window.addEventListener("hashchange", router);
-  document.addEventListener("DOMContentLoaded", function () {
+  function boot() {
+    if (document.documentElement) document.documentElement.lang = (LANG === "zh") ? "zh-CN" : "ja";
+    paintLangSwitch();
+    var sb = $("search");
+    if (sb) sb.placeholder = T("search_ph");
     bindSearch();
+    bindLang();
     router();
-  });
+  }
+  document.addEventListener("DOMContentLoaded", boot);
   // 若 DOM 已就绪（脚本在 body 末尾）
-  if (document.readyState !== "loading") { bindSearch(); router(); }
+  if (document.readyState !== "loading") { boot(); }
 })();
