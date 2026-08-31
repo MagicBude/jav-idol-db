@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>资料库 · IDOL DB</title>
   <link rel="stylesheet" href="assets/css/style.css" />
+  <!-- 防闪：在 CSS 应用前就定好主题，避免亮/暗跳变 -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("theme");
+        if (!t) t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="topbar">
@@ -13,9 +23,17 @@
       <span class="ic">🔍</span>
       <input id="search" type="text" placeholder="番号 / 片名 / 女优 / 标签…" />
     </div>
-    <div class="langswitch" id="langswitch">
-      <button type="button" data-lang="ja">日本語</button>
-      <button type="button" data-lang="zh">中文</button>
+    <div class="topbar-tools">
+      <div class="dd lang-dd" id="langdd">
+        <button type="button" class="dd-btn" id="langbtn" aria-haspopup="true" aria-expanded="false">
+          <span id="langlabel">日本語</span><span class="caret">▾</span>
+        </button>
+        <ul class="dd-menu" id="langmenu" role="menu">
+          <li role="menuitem" data-lang="ja">日本語</li>
+          <li role="menuitem" data-lang="zh">中文</li>
+        </ul>
+      </div>
+      <button type="button" class="theme-btn" id="themebtn" title="切换亮/暗主题" aria-label="切换亮暗主题">🌙</button>
     </div>
   </header>
 

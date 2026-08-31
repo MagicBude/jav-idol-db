@@ -33,6 +33,28 @@
   try { LANG = localStorage.getItem("lang") || "ja"; } catch (e) {}
   if (LANGS.indexOf(LANG) < 0) LANG = "ja";
 
+  /* =================================================================
+     主题（亮/暗）：持久化于 localStorage('theme')，缺省跟随系统偏好
+     ================================================================= */
+  var THEMES = ["light", "dark"];
+  var THEME = "dark";
+  try {
+    THEME = localStorage.getItem("theme") ||
+      (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  } catch (e) {}
+  if (THEMES.indexOf(THEME) < 0) THEME = "dark";
+  function applyTheme(t) {
+    if (THEMES.indexOf(t) < 0) return;
+    THEME = t;
+    try { localStorage.setItem("theme", t); } catch (e) {}
+    if (document.documentElement) document.documentElement.setAttribute("data-theme", t);
+    paintTheme();
+  }
+  function paintTheme() {
+    var btn = $("themebtn");
+    if (btn) btn.textContent = (THEME === "dark") ? "☀️" : "🌙";
+  }
+
   var UI = {
     ja: {
       search_ph: "番号 / タイトル / 女優 / タグ で検索…",
@@ -187,9 +209,9 @@
     }
     return jp;
   }
-  // 标签：ja 显示原文；zh 显示中文映射
+  // 标签：ja 显示原文；zh 优先全量映射 GLOBAL_TAG_ZH，再回退手工 tag_zh，最后原文
   function tagName(jp) {
-    if (LANG === "zh") return TAG_ZH[jp] || jp;
+    if (LANG === "zh") return GLOBAL_TAG_ZH[jp] || TAG_ZH[jp] || jp;
     return jp;
   }
   // 片名：ja 显示原文；zh 优先显示 title_zh（由 zh.json 提供），缺失则原文
@@ -213,7 +235,7 @@
     if ((w.label || "").toLowerCase().indexOf(q) >= 0) return true;
     if ((w.series || "").toLowerCase().indexOf(q) >= 0) return true;
     if ((w.tags || []).some(function (x) {
-      return x.toLowerCase().indexOf(q) >= 0 || (TAG_ZH[x] || "").toLowerCase().indexOf(q) >= 0;
+      return x.toLowerCase().indexOf(q) >= 0 || ((GLOBAL_TAG_ZH[x] || TAG_ZH[x] || "").toLowerCase().indexOf(q) >= 0);
     })) return true;
     if ((w.tags_zh || []).some(function (x) { return x.toLowerCase().indexOf(q) >= 0; })) return true;
     return false;
@@ -227,6 +249,20 @@
       var rec = { w: w, owner: a.name, ownerAvatar: a.avatar };
       WORKS.push(rec);
       BY_CODE[w.code] = rec;
+    });
+  });
+
+  // 全量 JP->ZH 标签映射：由每条作品的 tags / tags_zh 并行构建（genre_norm 已产出中文）
+  // 覆盖率 ~99.98%；不足时回退到 zh.json 手工 tag_zh 与原文。
+  var GLOBAL_TAG_ZH = {};
+  DB.actresses.forEach(function (a) {
+    (a.works || []).forEach(function (w) {
+      var ts = w.tags || [], tz = w.tags_zh || [];
+      if (ts.length && tz.length && ts.length === tz.length) {
+        for (var i = 0; i < ts.length; i++) {
+          if (ts[i] && tz[i] && !(ts[i] in GLOBAL_TAG_ZH)) GLOBAL_TAG_ZH[ts[i]] = tz[i];
+        }
+      }
     });
   });
 
@@ -504,13 +540,8 @@
     if (w.director) rows += '<div class="row"><b>' + esc(T("f_director")) + '：</b>' + chip("d", w.director) + "</div>";
     if (w.rating) rows += row(T("f_rating"), "★ " + w.rating + (w.rating_count ? "（" + w.rating_count + (LANG === "zh" ? " 评价" : " 評価") + "）" : ""));
 
-    // 标签：ja 显示原文 tags；zh 优先中文 tags_zh
-    var tagList;
-    if (LANG === "zh") {
-      tagList = (w.labels || []).concat((w.tags_zh && w.tags_zh.length) ? w.tags_zh : (w.tags || []));
-    } else {
-      tagList = (w.labels || []).concat(w.tags || []);
-    }
+    // 标签：统一用原始 tags，显示名经 tagName 按语言切换（zh 走全量映射）
+    var tagList = (w.labels || []).concat(w.tags || []);
     var tagHtml = chips("t", tagList);
 
     // 外部链接
@@ -658,31 +689,59 @@
     return WORKS.slice();
   }
 
-  /* ---- 语言切换 ---- */
-  function paintLangSwitch() {
-    var sw = $("langswitch");
-    if (!sw) return;
-    var btns = sw.querySelectorAll("button");
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].classList.toggle("active", btns[i].getAttribute("data-lang") === LANG);
+  /* ---- 语言下拉 ---- */
+  var langOpen = false;
+  function paintLang() {
+    var lbl = $("langlabel");
+    if (lbl) lbl.textContent = (LANG === "zh") ? "中文" : "日本語";
+    var menu = $("langmenu");
+    if (menu) {
+      var items = menu.querySelectorAll("li");
+      for (var i = 0; i < items.length; i++) {
+        items[i].classList.toggle("active", items[i].getAttribute("data-lang") === LANG);
+      }
     }
+  }
+  function openLang(open) {
+    langOpen = open;
+    var dd = $("langdd");
+    if (dd) dd.classList.toggle("open", open);
+    var btn = $("langbtn");
+    if (btn) btn.setAttribute("aria-expanded", open ? "true" : "false");
   }
   function applyLang(l) {
     if (LANGS.indexOf(l) < 0) return;
     LANG = l;
     try { localStorage.setItem("lang", l); } catch (e) {}
     if (document.documentElement) document.documentElement.lang = (l === "zh") ? "zh-CN" : "ja";
-    paintLangSwitch();
+    openLang(false);
+    paintLang();
     var sb = $("search");
     if (sb) sb.placeholder = T("search_ph");
     router();
   }
   function bindLang() {
-    var sw = $("langswitch");
-    if (!sw) return;
-    sw.addEventListener("click", function (e) {
-      var b = e.target.closest ? e.target.closest("button") : null;
-      if (b && b.getAttribute) applyLang(b.getAttribute("data-lang"));
+    var dd = $("langdd");
+    if (!dd) return;
+    dd.addEventListener("click", function (e) {
+      var li = e.target.closest ? e.target.closest("li[data-lang]") : null;
+      if (li) { applyLang(li.getAttribute("data-lang")); return; }
+      if (e.target.closest && e.target.closest("#langbtn")) openLang(!langOpen);
+    });
+    document.addEventListener("click", function (e) {
+      if (langOpen && dd && !dd.contains(e.target)) openLang(false);
+    });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && langOpen) openLang(false);
+    });
+  }
+
+  /* ---- 主题切换 ---- */
+  function bindTheme() {
+    var btn = $("themebtn");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      applyTheme(THEME === "dark" ? "light" : "dark");
     });
   }
 
@@ -702,11 +761,13 @@
   window.addEventListener("hashchange", router);
   function boot() {
     if (document.documentElement) document.documentElement.lang = (LANG === "zh") ? "zh-CN" : "ja";
-    paintLangSwitch();
+    paintTheme();
+    paintLang();
     var sb = $("search");
     if (sb) sb.placeholder = T("search_ph");
     bindSearch();
     bindLang();
+    bindTheme();
     router();
   }
   document.addEventListener("DOMContentLoaded", boot);
