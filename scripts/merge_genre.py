@@ -7,8 +7,11 @@
   * jav321 把日文放在 `translate` 列（`ja` 多为空），自动把该列提升为合并键。
   * 无日文来源（javdb）按 `en` / `zh_cn` / `id` 兜底作为合并键。
 - 值列补全（让单一文档本身就是完整可读的资料库）：
-  * `zh_cn`：优先 source zh_cn -> 否则 zhconv(源 zh_tw 繁->简) -> 否则
-    源 translate（若为中文）繁->简 -> 否则 data/zh.json 的 tag_zh[ja] 人工精修。
+  * `zh_cn`：优先 data/zh.json 的 tag_zh[ja] 人工精修（最高优先，可纠正源站错误）
+    -> 否则 source zh_cn -> 否则 源 translate（若为中文）繁->简 ->
+    否则 源 zh_tw（若为中文）繁->简 -> 否则保留日文原文（避免中文视图丢标签）。
+    （注：个别源站把日文原词抄进 zh_tw 列，故 translate 优先于 zh_tw 且仅采纳含中文的候选；
+    人工精修层优先级高于一切源站，与 genre_norm 运行时行为一致。）
   * `zh_tw`：优先 source zh_tw -> 否则 zhconv(源 zh_cn 简->繁)，两列互补填满。
 - 去重：同一合并键只保留一行，多来源用 `source` 列记录溯源。
 - 输出整洁、可排序、UTF-8-BOM（Excel 直接正确打开中文）。
@@ -85,22 +88,31 @@ def _is_chinese(s):
 
 
 def _fill_zh_cn(members, ja, zh_json):
-    """按优先级补全简中：源 zh_cn -> 源 zh_tw(繁->简) -> 源 translate(中,繁->简) -> zh.json 精修。"""
+    """按优先级补全简中：zh.json 人工精修 -> 源 zh_cn -> 源 translate(中,繁->简) -> 源 zh_tw(中,繁->简) -> 原文。
+
+    注意：
+    - data/zh.json 的 tag_zh 是人工精修层，优先级最高（可纠正源站错误，如把
+      源站误写的「和服・丧服」纠正为「和服・浴衣」），且需与 genre_norm 运行时一致
+      （运行时 zh.json 最后应用、覆盖 CSV）。
+    - zh_tw 列在个别源站里被直接填了日文（如 アスリート 的 zh_tw 也是 アスリート），
+      因此先于 zh_tw 检查 translate，且仅在「该候选确实含中文」时才采用，
+      避免把日文原词当中文填进 zh_cn。
+    """
+    if ja and ja in zh_json:
+        return zh_json[ja]
     for _, row, _ in members:
         v = (row.get("zh_cn") or "").strip()
         if v:
             return v
     for _, row, _ in members:
-        v = (row.get("zh_tw") or "").strip()
-        if v:
-            return zhconv.convert(v, "zh-cn")
-    for _, row, _ in members:
         v = (row.get("translate") or "").strip()
         if v and _is_chinese(v):
             return zhconv.convert(v, "zh-cn")
-    if ja and ja in zh_json:
-        return zh_json[ja]
-    return ""
+    for _, row, _ in members:
+        v = (row.get("zh_tw") or "").strip()
+        if v and _is_chinese(v):
+            return zhconv.convert(v, "zh-cn")
+    return ja  # 无可译内容时保留原文，避免中文视图丢标签
 
 
 def _fill_zh_tw(members):
@@ -189,36 +201,129 @@ def _pick(members, valcol):
 
 
 def write_xlsx(rows):
-    """生成带样式的可读 xlsx（CSV 无法承载样式，xlsx 可以）。"""
+    """生成带样式的可读 xlsx（CSV 无法承载样式，xlsx 可以）。
+
+    样式：
+    - 粉色加粗表头 + 全边框 + 冻结首行 + 自动筛选
+    - 斑马纹（隔行浅粉）提升可读性
+    - 中文友好字体（微软雅黑），垂直居中、左对齐
+    - 「简中仍为日文」的行整行琥珀色高亮，提醒需人工补译
+    - 额外「说明」工作表解释各列含义与维护方式
+    """
     try:
         from openpyxl import Workbook
-        from openpyxl.styles import Font, Alignment, PatternFill
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
         from openpyxl.utils import get_column_letter
     except Exception as e:
         print("跳过 xlsx（openpyxl 不可用）: %s" % e, file=sys.stderr)
         return
 
+    # 仅含「人读资料库」需要的列（id/url 内部字段不展示）
+    disp = [
+        ("ja", "原始标签 (ja)"),
+        ("zh_cn", "简中 (zh_cn)"),
+        ("zh_tw", "繁中 (zh_tw)"),
+        ("en", "英文 (en)"),
+        ("translate", "源中文 (translate)"),
+        ("note", "说明 (note)"),
+        ("source", "来源 (source)"),
+    ]
+    headers = [h for _, h in disp]
+    ncol = len(headers)
+
+    # 判断「简中仍为日文」：含平/片假名即视为未译（排除中点「・」与重复记号「ヽヾ」，
+    # 否则像「和服・浴衣」这类纯中文、仅用「・」分隔的词会被误判）
+    def _is_untranslated(r):
+        cn = (r.get("zh_cn") or "").strip()
+        return any("\u3040" <= ch <= "\u30FF" and ch not in "・ヽヾ" for ch in cn)
+
+    # ---- 样式常量 ----
+    HEAD_FILL = PatternFill("solid", fgColor="FF5C8A")
+    HEAD_FONT = Font(name="微软雅黑", bold=True, color="FFFFFF", size=11)
+    BODY_FONT = Font(name="微软雅黑", size=10.5)
+    ZEBRA = PatternFill("solid", fgColor="FCEFF4")          # 隔行浅粉
+    NEEDED = PatternFill("solid", fgColor="FFF2CC")          # 未译行：琥珀色
+    thin = Side(style="thin", color="E6D2DA")
+    BORDER = Border(left=thin, right=thin, top=thin, bottom=thin)
+    CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
     wb = Workbook()
     ws = wb.active
     ws.title = "genre"
-    headers = ["原始标签(ja)", "简中(zh_cn)", "繁中(zh_tw)",
-               "英文(en)", "别名(translate)", "来源(source)"]
     ws.append(headers)
-    head_fill = PatternFill("solid", fgColor="FF5C8A")
-    for c in range(1, len(headers) + 1):
+    for c in range(1, ncol + 1):
         cell = ws.cell(row=1, column=c)
-        cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = head_fill
-        cell.alignment = Alignment(horizontal="center", vertical="center")
-    for r in rows:
-        ws.append([r["ja"], r["zh_cn"], r["zh_tw"],
-                   r["en"], r["translate"], r["source"]])
+        cell.font = HEAD_FONT
+        cell.fill = HEAD_FILL
+        cell.alignment = CENTER
+        cell.border = BORDER
+
+    n_untrans = 0
+    for ridx, r in enumerate(rows, start=2):
+        vals = [r.get(col, "") for col, _ in disp]
+        ws.append(vals)
+        untr = _is_untranslated(r)
+        if untr:
+            n_untrans += 1
+            fill = NEEDED
+        elif ridx % 2 == 0:
+            fill = ZEBRA
+        else:
+            fill = None
+        for c in range(1, ncol + 1):
+            cell = ws.cell(row=ridx, column=c)
+            cell.font = BODY_FONT
+            cell.border = BORDER
+            cell.alignment = CENTER if c in (3, 4, 7) else LEFT
+            if fill:
+                cell.fill = fill
+
     ws.freeze_panes = "A2"
-    ws.auto_filter.ref = "A1:%s%d" % (get_column_letter(len(headers)), len(rows) + 1)
-    for i, width in enumerate([30, 22, 22, 28, 24, 24], start=1):
+    ws.auto_filter.ref = "A1:%s%d" % (get_column_letter(ncol), len(rows) + 1)
+    ws.sheet_view.showGridLines = False
+    for i, width in enumerate([34, 24, 22, 26, 22, 30, 22], start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
+    ws.row_dimensions[1].height = 26
+
+    # ---- 说明工作表 ----
+    sheet2 = wb.create_sheet("说明")
+    sheet2.sheet_view.showGridLines = False
+    lines = [
+        ("jav-idol-db · 标签资料库 (genre)", True),
+        ("", False),
+        ("本表是唯一的标签权威文件，同时承担两项职责：", False),
+        ("  1) 站点构建 / 搜索检索的来源（scripts/genre_norm.py 只读取本表）", False),
+        ("  2) 你可在 Excel 中直接阅读、筛选、补译的资料库", False),
+        ("", False),
+        ("各列含义", True),
+        ("  原始标签 (ja)   —— 日文 / 英文原始标签，是合并去重的主键", False),
+        ("  简中 (zh_cn)    —— 简体中文译名（站点中文视图显示这一列）", False),
+        ("  繁中 (zh_tw)    —— 繁体中文译名（由简中互补生成，供繁中用户）", False),
+        ("  英文 (en)       —— 英文译名", False),
+        ("  源中文 (translate) —— 各源站（javbus/javlib 等）提供的原站翻译；", False),
+        ("                     构建时作为备选补全『简中』，平时可忽略（非『别名』）", False),
+        ("  说明 (note)     —— 备注信息", False),
+        ("  来源 (source)   —— 该标签由哪些源站合并而来（如 javbus;javlib）", False),
+        ("", False),
+        ("琥珀色整行 = 简中仍为日文", True),
+        ("  表示暂无可考的中文译名，多为品牌 / 奖项专名（如 AV OPEN 赛事分区）。", False),
+        ("  若你确知其中文，可直接在 genre.csv 的『简中』列填写后，重跑合并脚本。", False),
+        ("", False),
+        ("如何重新生成", True),
+        ("  修改 data/genre/genre.csv（或 legacy/ 下源文件）后，在仓库根目录运行：", False),
+        ("      python scripts/merge_genre.py", False),
+        ("  会刷新 genre.csv 与 genre.xlsx，并请用 build_index.py 重建站点数据。", False),
+    ]
+    sheet2.column_dimensions["A"].width = 92
+    for i, (text, bold) in enumerate(lines, start=1):
+        c = sheet2.cell(row=i, column=1, value=text)
+        c.font = Font(name="微软雅黑", bold=bold, size=12 if bold and i == 1 else 10.5,
+                      color="FF5C8A" if (bold and i == 1) else "333333")
+        c.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
+
     wb.save(_OUT_XLSX)
-    print("已生成样式化 xlsx: %s" % _OUT_XLSX)
+    print("已生成样式化 xlsx: %s（未译行高亮 %d 行）" % (_OUT_XLSX, n_untrans))
 
 
 if __name__ == "__main__":
