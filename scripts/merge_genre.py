@@ -305,10 +305,10 @@ def write_xlsx(rows):
         ("", False),
         ("琥珀色整行 = 简中仍为日文", True),
         ("  表示暂无可考的中文译名，多为品牌 / 奖项专名（如 AV OPEN 赛事分区）。", False),
-        ("  若你确知其中文，可直接在 genre.csv 的『简中』列填写后，重跑合并脚本。", False),
+        ("  若你确知其中文，请在 data/zh.json 的 tag_zh 写入『日文标签: 中文』，重跑 merge_genre.py 即同步到本表（注意：直接改 genre.csv 会被重跑覆盖，勿直接改）。", False),
         ("", False),
         ("如何重新生成", True),
-        ("  修改 data/genre/genre.csv（或 legacy/ 下源文件）后，在仓库根目录运行：", False),
+        ("  修改 data/zh.json 的 tag_zh（人工精修层，优先级最高）后，在仓库根目录运行：", False),
         ("      python scripts/merge_genre.py", False),
         ("  会刷新 genre.csv 与 genre.xlsx，并请用 build_index.py 重建站点数据。", False),
     ]
