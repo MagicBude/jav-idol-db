@@ -634,7 +634,8 @@
   /* =================================================================
      路由
      ================================================================= */
-  function router() {
+  function router(opts) {
+    opts = opts || {};
     var app = $("app");
     var h = (location.hash || "#/").slice(1);
     var parts = h.split("/").filter(Boolean); // 去掉空段
@@ -654,7 +655,7 @@
     else html = '<div class="empty">' + esc(T("err_page")) + esc(h) + "</div>";
 
     app.innerHTML = html;
-    window.scrollTo(0, 0);
+    if (opts.scroll !== false) window.scrollTo(0, 0);
 
     // 绑定排序下拉
     var sel = $("sortsel");
@@ -718,7 +719,7 @@
     paintLang();
     var sb = $("search");
     if (sb) sb.placeholder = T("search_ph");
-    router();
+    router({ scroll: false });
   }
   function bindLang() {
     var dd = $("langdd");
