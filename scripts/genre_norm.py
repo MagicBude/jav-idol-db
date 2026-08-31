@@ -42,10 +42,19 @@ def _load_once():
     if not os.path.isdir(_GENRE_DIR):
         _LOADED = True
         return
-    for fn in sorted(os.listdir(_GENRE_DIR)):
-        if not fn.startswith("genre_") or not fn.endswith(".csv"):
-            continue
-        path = os.path.join(_GENRE_DIR, fn)
+    # 优先加载单一权威合并表 genre_all.csv（由 scripts/merge_genre.py 生成，
+    # 已按日文标签去重并聚合多源）。原始分源文件归档在 data/genre/legacy/ 后
+    # 不再被扫描，避免重复标签污染映射表。
+    all_csv = os.path.join(_GENRE_DIR, "genre_all.csv")
+    if os.path.isfile(all_csv):
+        csv_files = [all_csv]
+    else:
+        csv_files = [
+            os.path.join(_GENRE_DIR, fn)
+            for fn in sorted(os.listdir(_GENRE_DIR))
+            if fn.startswith("genre_") and fn.endswith(".csv")
+        ]
+    for path in csv_files:
         try:
             with open(path, newline="", encoding="utf-8-sig") as f:
                 reader = csv.DictReader(f)
