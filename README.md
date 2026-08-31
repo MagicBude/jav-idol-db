@@ -74,6 +74,10 @@ jav-idol-db/
 │   ├── scrape_all.py       # 批量重抓 data/works 全部作品（可续跑/并发）
 │   ├── update_metadata.py  # 多源回补编排器（幂等，填空缺字段）
 │   ├── audit_attribution.py# 归属审计（比对 codeav 主演）
+│   ├── actress_status.py  # 女优状态词表 + 解析（前后端共用）
+│   ├── enrich_actress_status.py # 抓女优在役/引退/出道/引退/复出日期 → profile.json
+│   ├── merge_actress.py    # 聚合女优为 actress.csv + 样式化 actress.xlsx（人读资料库）
+│   ├── probe_sources.py    # 各元数据源可达性巡检（输出 probe_report.json）
 │   └── sources/            # 多源抓取内核（codeav/fanza/javbus/javdb/javlibrary/websearch）
 ├── tools/                 # 查询 CLI + 115 工具链 + 富化脚本
 │   ├── jav.py              # 查询 CLI（code/actress/search/normalize）
@@ -122,6 +126,44 @@ python scripts/update_metadata.py --pending --hard      # 多源回补(含 javbu
 抓取到的作品写入 `data/works/<番号>.json`（单一真相源），再跑 `make build` 即可上线。
 归属修正：`update_metadata.py --pending --fix-attribution` 会就地修正 work 的 `actress` 字段
 （单布局下归属体现在字段里，不再在目录间搬文件）。
+
+## 女优状态字段与资料表
+
+`data/actresses/<女优>/profile.json` 新增**在役 / 引退状态**与日期字段（解决「资料库底层不全、
+上层文档就不准」的根因）：
+
+| 字段 | 含义 |
+|---|---|
+| `status` | 当前状态代码：`active`(在役) / `retired`(引退) / `hiatus`(休业·活动休止) / `unknown`(不明) |
+| `debut_date` | 出道日期（精度不足时只留年，如 `2020` 或 `2020-03`） |
+| `retire_date` | 引退日期；在役为 `null` |
+| `comeback_date` | 复出日期；无则 `null` |
+| `status_source` | 信息来源（`wikipedia-ja` / `avjoho` / `researched` / `bio-guess`），便于复核 |
+
+抓取与维护（幂等：仅填空缺字段，绝不覆盖 `source=researched` 的好数据）：
+
+```bash
+python scripts/enrich_actress_status.py          # 用 wikipedia-ja 等女优向源抓取状态/日期，写回 profile.json
+python scripts/merge_actress.py                   # 聚合全部女优为 actress.csv + 样式化 actress.xlsx（给人读的资料库，勿手改）
+```
+
+站点女优详情页自动显示状态徽章（在役绿 / 引退灰 / 休业橙）与出道·引退·复出日期。
+状态词表集中在 `scripts/actress_status.py`（前后端共用同一套「代码→显示名」映射）。
+
+## 数据来源可达性巡检
+
+`scripts/probe_sources.py` 用真实 Chrome 实测各源当前可达性 / 年龄门 / Cloudflare 拦截，
+输出 `probe_report.json`，据此决定走哪条抓取链：
+
+| 源 | 状态 | 用途 |
+|---|---|---|
+| `codeav` | ✅ 可达（主源） | 作品元数据主力 |
+| `javdatabase` | ✅ 可达 | 作品元数据交叉校验 |
+| `wikipedia-ja` | ✅ 可达（有年龄门，自动点） | 女优状态 / 出道 / 引退 |
+| `r18dev` | ⚠️ 可达但需修正 URL | FANZA 英文镜像，作品元数据 |
+| `mgstage` | ⚠️ 年龄门 | Indies 作品元数据 |
+| `minnano` / `avjoho` | ⚠️ 可达但常限流 | 女优状态补充源 |
+| `fanza` / `ideapocket` | ❌ 当前网络不可达 | 地域限制 / URL 待修正 |
 
 ## 部署到 GitHub Pages
 
