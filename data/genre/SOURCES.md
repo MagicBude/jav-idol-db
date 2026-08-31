@@ -14,12 +14,12 @@
 
 ### 列说明
 
-`id, url, ja, zh_cn, zh_tw, en, translate, note, source`
+`id, url, ja, zh_cn, zh_tw, en, note, source`
 
 - `ja`：原始标签键（日文优先；部分来源无日文时退化为英文 / 中文 / 站点 id）。
-- `zh_cn` / `zh_tw` / `en` / `translate`：各语言翻译（值优先级 zh_cn → zh_tw → translate）。
+- `zh_cn` / `zh_tw` / `en`：各语言翻译（简中 `zh_cn` 由 `data/zh.json` 人工精修层最高优先补全，站点中文视图显示此列）。
 - `source`：溯源列，记录该行由哪些原始来源合并而来（如 `javbus;javlib`）。
-- 译文为空表示该标签应被丢弃。
+- 注：`translate`（各源站原站中文翻译）仅作为 `zh_cn` 的内部补全兜底，不输出到面向读者的文档。
 
 ### 重新生成
 
@@ -47,4 +47,4 @@ python scripts/merge_genre.py
 
 映射逻辑见 `scripts/genre_norm.py`（独立实现）。权威表统一支持以下
 可作为「键」的列：`ja`（日文）/ `en`（英文）/ `id`；作为「值」的列优先
-`zh_cn`，否则 `zh_tw`，否则 `translate`。
+`zh_cn`，否则 `zh_tw`。

@@ -41,7 +41,8 @@ _OUT_XLSX = os.path.join(_GENRE_DIR, "genre.xlsx")
 _PRIORITY = ["javdb", "javbus", "javlib", "avsox", "jav321"]
 
 # 输出列（与 genre_norm 的键/值列保持一致，便于直接消费）
-FIELDS = ["id", "url", "ja", "zh_cn", "zh_tw", "en", "translate", "note", "source"]
+# 注意：translate(源中文) 仅作 zh_cn 的内部补全兜底，不写进面向读者的资料库
+FIELDS = ["id", "url", "ja", "zh_cn", "zh_tw", "en", "note", "source"]
 
 
 def _src_name(fn):
@@ -166,7 +167,6 @@ def merge():
             empty_before += 1
         merged["zh_tw"] = _fill_zh_tw(members)
         merged["en"] = _pick(members, "en")
-        merged["translate"] = _pick(members, "translate")
         merged["id"] = (members[0][1].get("id") or "").strip()
         merged["url"] = (members[0][1].get("url") or "").strip()
         notes = []
@@ -218,13 +218,12 @@ def write_xlsx(rows):
         print("跳过 xlsx（openpyxl 不可用）: %s" % e, file=sys.stderr)
         return
 
-    # 仅含「人读资料库」需要的列（id/url 内部字段不展示）
+    # 仅含「人读资料库」需要的列（id/url/translate 内部字段不展示）
     disp = [
         ("ja", "原始标签 (ja)"),
         ("zh_cn", "简中 (zh_cn)"),
         ("zh_tw", "繁中 (zh_tw)"),
         ("en", "英文 (en)"),
-        ("translate", "源中文 (translate)"),
         ("note", "说明 (note)"),
         ("source", "来源 (source)"),
     ]
@@ -275,14 +274,14 @@ def write_xlsx(rows):
             cell = ws.cell(row=ridx, column=c)
             cell.font = BODY_FONT
             cell.border = BORDER
-            cell.alignment = CENTER if c in (3, 4, 7) else LEFT
+            cell.alignment = CENTER if c in (3, 4, 6) else LEFT
             if fill:
                 cell.fill = fill
 
     ws.freeze_panes = "A2"
     ws.auto_filter.ref = "A1:%s%d" % (get_column_letter(ncol), len(rows) + 1)
     ws.sheet_view.showGridLines = False
-    for i, width in enumerate([34, 24, 22, 26, 22, 30, 22], start=1):
+    for i, width in enumerate([34, 24, 22, 26, 30, 22], start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
     ws.row_dimensions[1].height = 26
 
@@ -301,8 +300,6 @@ def write_xlsx(rows):
         ("  简中 (zh_cn)    —— 简体中文译名（站点中文视图显示这一列）", False),
         ("  繁中 (zh_tw)    —— 繁体中文译名（由简中互补生成，供繁中用户）", False),
         ("  英文 (en)       —— 英文译名", False),
-        ("  源中文 (translate) —— 各源站（javbus/javlib 等）提供的原站翻译；", False),
-        ("                     构建时作为备选补全『简中』，平时可忽略（非『别名』）", False),
         ("  说明 (note)     —— 备注信息", False),
         ("  来源 (source)   —— 该标签由哪些源站合并而来（如 javbus;javlib）", False),
         ("", False),
