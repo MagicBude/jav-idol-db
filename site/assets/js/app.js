@@ -201,12 +201,9 @@
   }
 
   /* ---- 显示名（随语言切换）---- */
-  // 女优：ja 显示原文；zh 显示「中文（日文）」
+  // 女优：ja 显示原文；zh 显示中文（无映射则回退原文）
   function actressName(jp) {
-    if (LANG === "zh") {
-      var zh = ACTRESS_ZH[jp];
-      return zh ? (zh + "（" + jp + "）") : jp;
-    }
+    if (LANG === "zh") return ACTRESS_ZH[jp] || jp;
     return jp;
   }
   // 标签：ja 显示原文；zh 优先全量映射 GLOBAL_TAG_ZH，再回退手工 tag_zh，最后原文
