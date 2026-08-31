@@ -3,7 +3,7 @@
 update_metadata.py —— 多源自主回补编排器
 ================================================================
 把零散抓取器串成一条可重复跑、幂等的回补链：
-    codeav → fanza → javlibrary → [--hard: javbus, javdb] → websearch
+    codeav → fanza → javlibrary → [--hard: javbus, javdb, javdatabase] → websearch
 
 用法：
   # 回补所有 pending（缺标题/发行日的）作品
@@ -15,7 +15,7 @@ update_metadata.py —— 多源自主回补编排器
   # 全部重跑（只填空缺字段，不覆盖好数据）
   python scripts/update_metadata.py --all
 
-  # 攻克模式：额外启用 javbus / javdb（CF 重，慢）
+  # 攻克模式：额外启用 javbus / javdb / javdatabase（CF 重，慢）
   python scripts/update_metadata.py --pending --hard
 
   # 只校验归属、把归属写错的 work 的 actress 字段原地修正
@@ -41,7 +41,7 @@ sys.path.insert(0, HERE)
 
 from sources import (
     CHAIN, CodeavFetcher, FanzaFetcher, JavlibraryFetcher,
-    JavbusFetcher, JavdbFetcher, WebSearchFetcher,
+    JavbusFetcher, JavdbFetcher, JavdatabaseFetcher, WebSearchFetcher,
     canon_code, merge_work, attribution_conflict,
 )
 
@@ -87,7 +87,7 @@ def collect_targets(args):
 def build_chain(use_hard):
     chain = [CodeavFetcher(), FanzaFetcher(), JavlibraryFetcher()]
     if use_hard:
-        chain += [JavbusFetcher(), JavdbFetcher()]
+        chain += [JavbusFetcher(), JavdbFetcher(), JavdatabaseFetcher()]
     chain.append(WebSearchFetcher())
     return chain
 
@@ -97,7 +97,8 @@ def build_chain_from_args(args):
         name_map = {
             "codeav": CodeavFetcher, "fanza": FanzaFetcher,
             "javlibrary": JavlibraryFetcher, "javbus": JavbusFetcher,
-            "javdb": JavdbFetcher, "websearch": WebSearchFetcher,
+            "javdb": JavdbFetcher, "javdatabase": JavdatabaseFetcher,
+            "websearch": WebSearchFetcher,
         }
         chain = []
         for s in args.sources.split(","):
