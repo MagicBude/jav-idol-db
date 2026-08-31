@@ -9,8 +9,8 @@
 
 | 文件 | 说明 |
 |---|---|
-| `genre_all.csv` | **唯一权威映射表**，由 `scripts/merge_genre.py` 把多份跨源表合并、按日文标签去重生成。站点构建（`scripts/genre_norm.py`）只读取此文件。 |
-| `genre_all.xlsx` | 同上的样式化可读版本（冻结表头 + 彩色表头 + 自动列宽 + 筛选器），供人工浏览，不参与构建。 |
+| `genre.csv` | **唯一权威映射表**，由 `scripts/merge_genre.py` 把多份跨源表合并、按日文标签去重生成，并已补全 zh_cn/zh_tw。它同时承担两重角色：① 站点构建与搜索检索的来源（`scripts/genre_norm.py` 只读取此文件）；② 你可读的资料库（用 Excel 打开即可浏览/筛选全部标签）。 |
+| `genre.xlsx` | 同上的样式化可读版本（冻结表头 + 彩色表头 + 自动列宽 + 筛选器），供人工浏览，不参与构建。 |
 
 ### 列说明
 
@@ -28,7 +28,7 @@ python scripts/merge_genre.py
 ```
 
 会从 `legacy/` 下读取原始分源 CSV，重新合并、去重，并刷新
-`genre_all.csv` 与 `genre_all.xlsx`。
+`genre.csv` 与 `genre.xlsx`。
 
 ## 原始分源（已归档）
 
