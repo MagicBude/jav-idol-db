@@ -12,5 +12,8 @@
   "birthplace": "山形県",
   "blood_type": null,
   "cup": "C",
-  "debut_year": 2020
+  "debut_year": 2020,
+  "status": "retired",
+  "status_source": "wikipedia-ja(元女優)",
+  "debut_date": "2014-02-20"
 }

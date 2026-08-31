@@ -12,5 +12,8 @@
   "birthplace": "神奈川県",
   "blood_type": null,
   "cup": "L",
-  "debut_year": 2024
+  "debut_year": 2024,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2025-01-24"
 }

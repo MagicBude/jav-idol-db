@@ -12,5 +12,8 @@
   "birthplace": "長野県",
   "blood_type": "A",
   "cup": "E",
-  "debut_year": 2019
+  "debut_year": 2019,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2009-12-15"
 }

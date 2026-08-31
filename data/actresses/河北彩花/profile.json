@@ -12,5 +12,8 @@
   "birthplace": "千葉県",
   "blood_type": "O",
   "cup": "E",
-  "debut_year": 2018
+  "debut_year": 2018,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2018-04-14"
 }

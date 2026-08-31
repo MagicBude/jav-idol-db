@@ -12,5 +12,8 @@
   "birthplace": "東京都",
   "blood_type": null,
   "cup": "D",
-  "debut_year": 2018
+  "debut_year": 2018,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2013-11-21"
 }

@@ -12,5 +12,8 @@
   "birthplace": "神奈川県",
   "blood_type": "A",
   "cup": "C",
-  "debut_year": 2019
+  "debut_year": 2019,
+  "status": "unknown",
+  "status_source": "unknown",
+  "debut_date": "2019-06-20"
 }

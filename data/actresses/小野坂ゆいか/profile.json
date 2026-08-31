@@ -12,5 +12,8 @@
   "birthplace": null,
   "blood_type": "A",
   "cup": "H",
-  "debut_year": 2024
+  "debut_year": 2024,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2008-07-17"
 }

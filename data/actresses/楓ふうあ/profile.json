@@ -12,5 +12,8 @@
   "birthplace": null,
   "blood_type": "A",
   "cup": "F",
-  "debut_year": 2021
+  "debut_year": 2021,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2021-08-13"
 }

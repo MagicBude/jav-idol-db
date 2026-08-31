@@ -12,5 +12,8 @@
   "birthplace": "東京都",
   "blood_type": null,
   "cup": "E",
-  "debut_year": 2023
+  "debut_year": 2023,
+  "status": "active",
+  "status_source": "works-recency",
+  "debut_date": "2023-09-08"
 }

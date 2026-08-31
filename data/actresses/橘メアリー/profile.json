@@ -12,5 +12,8 @@
   "birthplace": "東京都",
   "blood_type": "O",
   "cup": "H",
-  "debut_year": 2014
+  "debut_year": 2014,
+  "status": "retired",
+  "status_source": "wikipedia-ja(元女優)",
+  "debut_date": "2014-03-06"
 }
