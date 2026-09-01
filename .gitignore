@@ -63,3 +63,8 @@ audit_log.txt
 audit_report.json
 attribution_review.json
 tachibana_vr_*.json
+
+# ── 抓取器运行产物（跑 update_metadata.py 即重新生成，不入库）──
+data/pending_review.json
+data/attribution_report.json
+# 注：data/attribution_pending.json 是「人工待确认队列」，刻意入库保留
