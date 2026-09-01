@@ -255,9 +255,18 @@ def merge_work(existing, fetched):
         existing["source"] = fetched["source"]
         changed = True
     # actresses 合并去重
-    if fetched.get("actresses"):
+    # 单例 cast 与既有 owner 冲突时保守丢弃：codeav 等源按设计只报主演（JSON-LD
+    # actor 单例），共演作品会误报成「只有别人」。此时无法区分「真共演」与
+    # 「抓取错误」，若照单全收就会造出 owner=甲、actresses=[乙] 自相矛盾的数据，
+    # 进而让归属校验与 build_index 的 owner 兜底持续误判。
+    fetched_cast = list(fetched.get("actresses") or [])
+    owner = existing.get("actress")
+    if fetched_cast and owner and len(fetched_cast) == 1:
+        if normalize_name(owner) not in {normalize_name(a) for a in fetched_cast}:
+            fetched_cast = []
+    if fetched_cast:
         cur = list(existing.get("actresses") or [])
-        for a in fetched["actresses"]:
+        for a in fetched_cast:
             if a and a not in cur:
                 cur.append(a)
         if cur != existing.get("actresses"):
@@ -278,14 +287,21 @@ def merge_work(existing, fetched):
 
 def attribution_conflict(dir_actress, fetched_actresses):
     """目录名女优 与 抓取到的女优列表 是否冲突。
-    返回 (is_conflict, suggested_dir)。suggested_dir 取抓取主女优。"""
+    返回 (is_conflict, suggested_dir)。suggested_dir 取抓取主女优（原始名，未归一化）。
+
+    比较前先归一化（去括号别名 + 已知变体），避免「河北彩花」vs「河北彩花（河北彩伽）」
+    这类同一人不同写法被误报为冲突。
+    """
     if not dir_actress or not fetched_actresses:
         return False, None
+    dn = normalize_name(dir_actress)
+    if not dn:
+        return False, None
     # 目录名在抓取列表里 -> 无冲突
-    if dir_actress in fetched_actresses:
+    if any(normalize_name(a) == dn for a in fetched_actresses):
         return False, None
     # 单人作品且主女优不同 -> 冲突
-    if len(fetched_actresses) == 1 and fetched_actresses[0] != dir_actress:
+    if len(fetched_actresses) == 1 and normalize_name(fetched_actresses[0]) != dn:
         return True, fetched_actresses[0]
     # 多人作品：目录名不在其中，可能是该女优缺席 -> 冲突（建议保留多人归属需人工）
     return True, None

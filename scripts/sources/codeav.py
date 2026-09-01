@@ -8,6 +8,21 @@ import urllib.request
 from .base import Fetcher, canon_code, clean, UA, upgrade_cover_url
 
 
+def _meta_dd(html, *keys):
+    """从元数据表 <dt>键</dt><dd>值</dd> 取值，兼容日文/英文两套渲染。
+
+    codeav 同一页面会随机返回日文（レーベル / 上映時間 / シリーズ）
+    或英文（Label / Runtime / Series）表头，只认一套会漏抓近半作品。
+    """
+    for k in keys:
+        m = re.search(re.escape(k) + r"</dt>\s*<dd>(.*?)</dd>", html, re.S | re.I)
+        if m:
+            val = clean(re.sub(r"<[^>]+>", "", m.group(1)))
+            if val:
+                return val
+    return None
+
+
 class CodeavFetcher(Fetcher):
     name = "codeav"
 
@@ -69,24 +84,42 @@ class CodeavFetcher(Fetcher):
             m = re.search(r'"productionCompany"\s*:\s*"([^"]+)"', html)
         result["maker"] = clean(m.group(1)) if m else None
 
-        # 厂牌 label
+        # 厂牌 label：优先 JSON-LD，退回元数据表（日/英两套 dt 标签）
+        label = None
         m = re.search(r'"label"\s*:\s*\{\s*"@type"\s*:\s*"Organization"\s*,\s*"name"\s*:\s*"([^"]+)"', html)
-        if not m:
+        if m:
+            label = clean(m.group(1))
+        if not label:
             m = re.search(r'itemprop="label"[^>]*>([^<]+)<', html, re.I)
-        result["label"] = clean(m.group(1)) if m else None
+            if m:
+                label = clean(m.group(1))
+        if not label:
+            label = _meta_dd(html, "レーベル", "Label")
+        result["label"] = label
 
-        # 系列 series：JSON-LD partOf.name；失败则退 genre/标题解析
+        # 系列 series：JSON-LD partOf.name；失败则退元数据表（シリーズ / Series）
         m = re.search(r'"partOf"\s*:\s*\{\s*"@type"\s*:\s*"CreativeWorkSeries"\s*,\s*"name"\s*:\s*"([^"]+)"', html)
         if not m:
             m = re.search(r'"partOf"\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"', html)
-        result["series"] = clean(m.group(1)) if m else None
+        series = clean(m.group(1)) if m else None
+        if not series:
+            series = _meta_dd(html, "シリーズ", "Series")
+        result["series"] = series
 
-        # 时长 duration
-        m = re.search(r"(\d+)\s*(?:min|minutes?)\b", html, re.I)
-        result["duration"] = int(m.group(1)) if m else None
-        if not result["duration"]:
-            m = re.search(r'"duration"\s*:\s*"PT(\d+)M?"', html)
-            result["duration"] = int(m.group(1)) if m else None
+        # 时长 duration：优先元数据表（上映時間 / Runtime），退回 JSON-LD PTnHnM
+        dur = None
+        raw_dur = _meta_dd(html, "上映時間", "Runtime")
+        if raw_dur:
+            dm = re.search(r"(\d+)", raw_dur)
+            if dm:
+                dur = int(dm.group(1))
+        if not dur:
+            m = re.search(r'"duration"\s*:\s*"PT(?:(\d+)H)?(?:(\d+)M)?"', html)
+            if m:
+                h = int(m.group(1) or 0)
+                mn = int(m.group(2) or 0)
+                dur = h * 60 + mn
+        result["duration"] = dur
 
         # 标签 tags：所有 /genre/ 链接文字，过滤导航噪音
         raw_tags = re.findall(r'href="[^"]*genre/[^"]*"[^>]*>([^<]+)</a>', html, re.I)
