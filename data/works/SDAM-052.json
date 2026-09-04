@@ -6,7 +6,7 @@
   "maker": "SODクリエイト",
   "label": null,
   "series": null,
-  "duration": null,
+  "duration": 127,
   "labels": [],
   "tags": [],
   "synopsis": null,
@@ -20,5 +20,5 @@
   ],
   "source": "javbus",
   "source_url": "https://www.javbus.com/SDAM-052",
-  "updated_at": "2026-08-26"
+  "updated_at": "2026-09-02"
 }

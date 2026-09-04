@@ -10,7 +10,6 @@
   ],
   "maker": "S1",
   "label": "S1 NO.1 STYLE",
-  "series": "SONE",
   "duration": 145,
   "tags": [
     "Slim",
@@ -46,5 +45,5 @@
   "_sources": {
     "javbus": "ok"
   },
-  "updated_at": "2026-09-01"
+  "updated_at": "2026-09-02"
 }

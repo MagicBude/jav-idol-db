@@ -10,7 +10,6 @@
   ],
   "maker": "S1 No.1 Style",
   "label": "S1 VR",
-  "series": "SIVR",
   "duration": 128,
   "tags": [
     "Genres",
@@ -45,5 +44,6 @@
   "_sources": {
     "javbus": "ok"
   },
-  "updated_at": "2026-08-31"
+  "updated_at": "2026-09-02",
+  "series": "S1 VR"
 }

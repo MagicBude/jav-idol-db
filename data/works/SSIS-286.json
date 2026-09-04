@@ -4,7 +4,7 @@
   "date": "2021-12-24",
   "source": "javbus",
   "source_url": "https://www.javbus.com/SSIS-286",
-  "updated_at": "2026-09-01",
+  "updated_at": "2026-09-02",
   "cover": "https://pics.dmm.co.jp/digital/video/ssis00286/ssis00286pl.jpg",
   "actress": "つばさ舞",
   "actresses": [
@@ -33,5 +33,6 @@
   "rating": 4.2,
   "rating_count": 62,
   "director": "嵐山みちる",
-  "label": "S1 NO.1 STYLE"
+  "label": "S1 NO.1 STYLE",
+  "series": "新人NO.1 STYLE"
 }

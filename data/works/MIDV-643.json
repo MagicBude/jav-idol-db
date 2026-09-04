@@ -11,7 +11,7 @@
  "maker": "ムーディーズ",
  "label": "MOODYZ DIVA",
  "series": null,
- "duration": null,
+ "duration": 150,
  "tags": [],
  "synopsis": null,
  "rating": null,
@@ -21,5 +21,5 @@
  "_sources": {
   "javbus": "ok"
  },
- "updated_at": "2026-08-27T02:59:23Z"
+ "updated_at": "2026-09-02"
 }

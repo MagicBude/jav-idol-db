@@ -10,7 +10,6 @@
   ],
   "maker": "S1",
   "label": "S1 VR",
-  "series": "SIVR",
   "duration": 98,
   "tags": [
     "Genres",
@@ -36,5 +35,6 @@
   "_sources": {
     "javbus": "ok"
   },
-  "updated_at": "2026-09-01"
+  "updated_at": "2026-09-02",
+  "series": "S1 VR"
 }

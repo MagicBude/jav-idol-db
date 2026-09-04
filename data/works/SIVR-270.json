@@ -11,7 +11,7 @@
   "actress_url": "https://www.codeav.net/actress/n-89a76365ed6f",
   "maker": "エスワン ナンバーワンスタイル",
   "label": "S1 VR",
-  "series": null,
+  "series": "S1 VR",
   "duration": 120,
   "tags": [
     "騎乗位",
@@ -53,5 +53,5 @@
   "_sources": {
     "codeav": "ok"
   },
-  "updated_at": "2026-09-01"
+  "updated_at": "2026-09-02"
 }

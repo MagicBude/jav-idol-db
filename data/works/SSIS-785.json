@@ -6,7 +6,7 @@
   "maker": "エスワン",
   "label": null,
   "series": null,
-  "duration": null,
+  "duration": 150,
   "labels": [],
   "tags": [],
   "synopsis": null,
@@ -16,5 +16,5 @@
   "segments": null,
   "source": "user_correction",
   "source_url": null,
-  "updated_at": "2026-08-25"
+  "updated_at": "2026-09-02"
 }

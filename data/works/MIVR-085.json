@@ -6,7 +6,7 @@
  "maker": "MILU VR",
  "label": null,
  "series": null,
- "duration": null,
+ "duration": 73,
  "labels": [],
  "tags": [],
  "synopsis": null,
@@ -20,5 +20,5 @@
  ],
  "source": "javbus",
  "source_url": "https://www.javbus.com/MIVR-085",
- "updated_at": "2026-08-26"
+ "updated_at": "2026-09-02"
 }

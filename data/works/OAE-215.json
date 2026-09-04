@@ -10,7 +10,6 @@
   ],
   "maker": "Air Control",
   "label": "Air Control",
-  "series": "OAE",
   "duration": 115,
   "tags": [
     "Image Video",
@@ -34,5 +33,5 @@
   "_sources": {
     "javbus": "ok"
   },
-  "updated_at": "2026-08-31"
+  "updated_at": "2026-09-02"
 }

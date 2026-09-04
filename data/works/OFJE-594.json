@@ -5,7 +5,7 @@
   "actress": "S1オールスター",
   "maker": "エスワン",
   "label": null,
-  "series": null,
+  "series": "S1 GIRLS COLLECTION",
   "duration": null,
   "labels": [],
   "tags": [],
@@ -16,5 +16,5 @@
   "segments": null,
   "source": "user_correction",
   "source_url": null,
-  "updated_at": "2026-08-25"
+  "updated_at": "2026-09-02"
 }

@@ -10,7 +10,6 @@
   ],
   "maker": "S1 No.1 Style",
   "label": "S1 NO.1 STYLE",
-  "series": "SSIS",
   "duration": 169,
   "tags": [
     "Exclusive",
@@ -41,5 +40,6 @@
   "_sources": {
     "javbus": "ok"
   },
-  "updated_at": "2026-09-01"
+  "updated_at": "2026-09-02",
+  "series": "初体験○本番スペシャル"
 }
