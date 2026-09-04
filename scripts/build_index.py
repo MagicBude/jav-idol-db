@@ -258,10 +258,11 @@ def main():
         "actresses": actresses,
     }
     os.makedirs(os.path.dirname(INDEX_JSON), exist_ok=True)
-    with open(INDEX_JSON, "w", encoding="utf-8") as f:
+    with open(INDEX_JSON, "w", encoding="utf-8", newline="\n") as f:
         json.dump(index, f, ensure_ascii=False, indent=2)
+        f.write("\n")
     os.makedirs(os.path.dirname(DATA_JS), exist_ok=True)
-    with open(DATA_JS, "w", encoding="utf-8") as f:
+    with open(DATA_JS, "w", encoding="utf-8", newline="\n") as f:
         f.write("window.JAV_DB = ")
         json.dump(index, f, ensure_ascii=False)
         f.write(";\n")

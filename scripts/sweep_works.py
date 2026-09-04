@@ -5,9 +5,12 @@ sweep_works.py —— 跑完 update_metadata.py 之后的工作区清扫器。
 做两件事（都遵循「文件名/原值优先」的项目铁律）：
 
 1. 剔除格式化噪声
-   update_metadata 落盘用 json.dumps(indent=2)，与仓库既有文件的 1 空格缩进不同，
-   会制造大量「内容没变、只有缩进变了」的假改动。凡语义与 HEAD 完全一致的文件，
-   按 HEAD 原始字节整份写回，让 git diff 只剩真实改动。
+   仓库既有文件统一为 indent=2 + LF 行尾。任何抓取/补全脚本若在 Windows 上以默认
+   文本模式落盘，会把 \n 写成 \r\n、或把缩进写成 indent=1，制造「内容没变、只有格式
+   变了」的假改动。本清扫器对所有文件做两件事：
+     - 语义与 HEAD 完全一致的文件：按 HEAD 原始字节整份写回（newline="" 不翻译）；
+     - 语义有变化的文件：以规范格式（indent=2 + \n）重新序列化后写回（newline="\n"）。
+   两者都保证输出是 LF 行尾，让 git diff 只剩真实改动。
 
 2. 还原被抓取器覆盖的归属字段
    codeav 按设计只返回 JSON-LD actor 单例（共演作品只报主演）。若拿它去覆盖
@@ -36,6 +39,24 @@ from sources.base import normalize_name  # 去括号别名 + 已知变体
 WORKS_DIR = os.path.join("data", "works")
 # 归属语义字段，成对还原，杜绝「值来自抓取器但 source 谎称 filename」
 ATTRIB_KEYS = ("actress", "source")
+
+
+def _detect_format(raw):
+    """从 HEAD 原始字节推断该文件自己的缩进与结尾换行，写回时原样保留。
+
+    仓库里 data/works 并非统一缩进（早期脚本写过 indent=1，后来改 indent=2）。
+    若用固定 indent=2 重写「有真实改动」的文件，会把 indent=1 的文件整份重排，
+    制造海量假 diff。故逐文件保留它原本的缩进与结尾换行。
+    """
+    indent = 2
+    for line in raw.split("\n"):
+        stripped = line.lstrip(" ")
+        if stripped and not stripped.startswith(("{", "[", "}", "]")):
+            # 首个真正带缩进的数据行
+            indent = len(line) - len(stripped)
+            break
+    ends_nl = raw.endswith("\n")
+    return indent, ends_nl
 
 
 def _head_blobs(path_prefix):
@@ -142,8 +163,11 @@ def main():
             continue
 
         if not dry:
-            with open(f, "w", encoding="utf-8") as fh:
-                fh.write(json.dumps(new, ensure_ascii=False, indent=2) + "\n")
+            indent, ends_nl = _detect_format(raw)
+            with open(f, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(json.dumps(new, ensure_ascii=False, indent=indent))
+                if ends_nl:
+                    fh.write("\n")
         if cast_reverted:
             n_cast += 1
         elif reverted:

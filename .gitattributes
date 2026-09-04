@@ -1,0 +1,6 @@
+# 强制 LF 行尾：Windows 文本模式默认把 \n 写成 \r\n，会让 JSON/JS
+# 在 git 里显示成整份重写。eol=lf 让 git 在提交时归一化到 LF。
+*.json text eol=lf
+*.js   text eol=lf
+*.py   text eol=lf
+*.csv  text eol=lf

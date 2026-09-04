@@ -68,3 +68,8 @@ tachibana_vr_*.json
 data/pending_review.json
 data/attribution_report.json
 # 注：data/attribution_pending.json 是「人工待确认队列」，刻意入库保留
+
+# ── 抓取原始缓存（可重抓，条目多；enrich_from_javdatabase.py 产出）──
+_cache/
+# 临时诊断/还原文件（_tmp/ 下仅放比对样本，非交付物）
+_tmp/
