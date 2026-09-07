@@ -1,77 +1,180 @@
 # -*- coding: utf-8 -*-
 """
-javdb.com Fetcher —— 搜索后取首条结果进详情。CF 重，且主域常被墙，
-带 .tv 镜像兜底。选择器为该站长稳结构（.title / .facts / .tags）。
+javdb.com Fetcher —— 搜索后取精确番号匹配进详情。CF 重，主域常被墙，带 .tv 镜像兜底。
+
+字段提取改为「静态 HTML 解析」（与 javdatabase 一致，用 lxml XPath，无额外依赖），
+Playwright 只负责过 CF 拿到 page.content()。详情面板结构：
+nav.panel.movie-panel-info > div.panel-block，每块 <strong>标签</strong> + <span
+class="value">值</span>。男优用 ♂ 符号标记，需过滤。
+
+标签匹配借鉴社区刮削器：strong 文本归一化后比对（番號/日期/時長/導演/片商/系列/
+評分/類別/演員），兼容繁简。
 """
 import re
+import lxml.html as LH
 from .base import Fetcher, canon_code, clean, run_with_browser, wait_past_cf, click_age_gate
+
+
+_LABELS = {
+    "code": ["番號", "番号"],
+    "date": ["日期"],
+    "duration": ["時長", "时长"],
+    "director": ["導演", "导演"],
+    "maker": ["片商"],
+    "publisher": ["發行", "发行"],
+    "series": ["系列"],
+    "rating": ["評分", "评分"],
+    "tags": ["類別", "类别"],
+    "actress": ["演員", "演员"],
+}
+
+
+def _norm_label(s):
+    return "".join(clean(s).rstrip(":：").split())
+
+
+_DURATION_RE = re.compile(r"(\d{1,4})\s*(分鍾|分钟|分|分間|min)?", re.I)
+_RATING_RE = re.compile(r"([\d.]+)\s*分")
+_RATING_COUNT_RE = re.compile(r"(\d+)\s*人")
+
+
+def _block_value(block):
+    """取 panel-block 的值文本：优先 span.value，否则去掉 strong 后的剩余。"""
+    v = block.xpath(".//span[contains(concat(' ', normalize-space(@class), ' '), ' value ')]")
+    if v:
+        return clean(v[0].text_content())
+    strongs = block.xpath(".//strong")
+    if strongs:
+        return clean(block.text_content().replace(
+            clean(strongs[0].text_content()), "", 1))
+    return clean(block.text_content())
+
+
+def _is_male(link):
+    """javdb 男优：紧跟的兄弟 strong 带 .male 或含 ♂。
+
+    注意：class 用分词判断，不能用子串——否则「female」会被误判（'male' in
+    'female' 为 True）。"""
+    nxt = link.getnext()
+    if nxt is None:
+        return False
+    cls = (nxt.get("class") or "").split()
+    if "male" in cls:
+        return True
+    if "♂" in (nxt.text_content() or ""):
+        return True
+    return False
+
+
+def parse_javdb_html(html, std):
+    """从 javdb 详情页 HTML 提取字段。返回标准化 dict 或 None。"""
+    if not html:
+        return None
+    doc = LH.fromstring(html)
+    if isinstance(doc, str):
+        return None
+
+    # 标题：优先 origin-title（无 HTML 实体），次选 current-title
+    title = None
+    for xp in (".//span[contains(@class, 'origin-title')]",
+               ".//strong[contains(@class, 'current-title')]"):  # noqa
+        el = doc.xpath(xp)
+        if el:
+            title = clean(el[0].text_content())
+            break
+    if not title:
+        raw = doc.findtext(".//title") or ""
+        if raw:
+            for suf in ("| JavDB 成人影片數據庫", "| JavDB"):
+                raw = raw.replace(suf, "")
+            title = clean(raw.split("|")[0]) if raw else None
+
+    panel = doc.xpath(".//nav[contains(@class, 'movie-panel-info')]")
+    root = panel[0] if panel else doc
+
+    out = {"series": None, "date": None, "duration": None, "director": None,
+           "maker": None, "publisher": None, "rating": None,
+           "rating_count": None, "actress": None, "actresses": [], "tags": []}
+
+    for block in root.xpath(".//div[contains(concat(' ', normalize-space(@class), ' '), ' panel-block ')]"):
+        strongs = block.xpath(".//strong")
+        if not strongs:
+            continue
+        field = None
+        nl = _norm_label(strongs[0].text_content())
+        for k, cands in _LABELS.items():
+            if nl in cands or nl in [c.lower() for c in cands]:
+                field = k
+                break
+        if not field:
+            continue
+
+        if field == "code":
+            m = re.search(r"([A-Z0-9]+-?\d+)", _block_value(block))
+            if m:
+                out["code"] = canon_code(m.group(1))
+        elif field == "date":
+            m = re.search(r"(\d{4}-\d{2}-\d{2})", _block_value(block))
+            if m:
+                out["date"] = m.group(1)
+        elif field == "duration":
+            m = _DURATION_RE.search(_block_value(block))
+            if m:
+                out["duration"] = int(m.group(1))
+        elif field in ("series", "director", "maker", "publisher"):
+            links = block.xpath(".//a")
+            if links:
+                out[field] = clean(links[0].text_content())
+        elif field == "rating":
+            val = _block_value(block)
+            m = _RATING_RE.search(val or "")
+            if m:
+                out["rating"] = float(m.group(1))
+            mc = _RATING_COUNT_RE.search(val or "")
+            if mc:
+                out["rating_count"] = int(mc.group(1))
+        elif field == "tags":
+            for a in block.xpath(".//a"):
+                t = clean(a.text_content())
+                if t and t not in out["tags"]:
+                    out["tags"].append(t)
+        elif field == "actress":
+            for a in block.xpath(".//a"):
+                if _is_male(a):
+                    continue
+                t = clean(a.text_content())
+                if t and t not in out["actresses"]:
+                    out["actresses"].append(t)
+            if out["actresses"] and not out["actress"]:
+                out["actress"] = out["actresses"][0]
+
+    # 封面
+    cover = None
+    for xp in (".//meta[@property='og:image']",
+               ".//img[contains(@class, 'video-cover')]"):  # noqa
+        el = doc.xpath(xp)
+        if el:
+            cover = el[0].get("content") or el[0].get("src")
+            if cover:
+                break
+
+    if not title and not out["series"] and not out["maker"]:
+        if not out["date"] and not out["duration"] and not out["actresses"]:
+            return None
+    return {
+        "code": std, "source": "javdb", "source_url": "",
+        "title": title, "date": out["date"], "actress": out["actress"],
+        "actresses": out["actresses"], "maker": out["maker"], "label": None,
+        "series": out["series"], "duration": out["duration"],
+        "tags": out["tags"], "synopsis": None,
+        "rating": out["rating"], "rating_count": out["rating_count"],
+        "cover": cover, "director": out["director"],
+    }
 
 
 class JavdbFetcher(Fetcher):
     name = "javdb"
     DOMAINS = ["https://javdb.com", "https://javdb.tv", "https://javdb39.com"]
-
-    def _extract(self, page, std):
-        title = None
-        try:
-            h = page.locator("h2.title, .title").first
-            if h.count():
-                title = clean(h.inner_text())
-            if not title and page.title():
-                title = clean(page.title().split("|")[0])
-        except Exception:
-            pass
-        date = None
-        maker = None
-        actress = None
-        actresses = []
-        tags = []
-        try:
-            for it in page.locator(".facts .fact, .facts li").all():
-                txt = clean(it.inner_text())
-                if not txt:
-                    continue
-                if "發行" in txt or "发行" in txt or "date" in txt.lower():
-                    m = re.search(r"(\d{4}-\d{2}-\d{2})", txt)
-                    if m:
-                        date = m.group(1)
-                elif "製作" in txt or "制作" in txt or "studio" in txt.lower():
-                    a = it.locator("a, span").last
-                    if a.count():
-                        maker = clean(a.inner_text())
-                elif "演員" in txt or "演员" in txt or "actor" in txt.lower():
-                    for a in it.locator("a").all():
-                        t = clean(a.inner_text())
-                        if t and t not in actresses:
-                            actresses.append(t)
-                    if actresses:
-                        actress = actresses[0]
-        except Exception:
-            pass
-        try:
-            for a in page.locator(".tags a, .genres a").all():
-                t = clean(a.inner_text())
-                if t and t not in tags:
-                    tags.append(t)
-        except Exception:
-            pass
-        cover = None
-        try:
-            img = page.locator(".column-left img, .video-cover img, img.cover").first
-            if img.count():
-                cover = clean(img.get_attribute("src"))
-        except Exception:
-            pass
-        if not title:
-            return None
-        return {
-            "code": std, "source": self.name, "source_url": page.url,
-            "title": title, "date": date, "actress": actress,
-            "actresses": actresses, "maker": maker, "label": None,
-            "series": None, "duration": None, "tags": tags,
-            "synopsis": None, "rating": None, "rating_count": None,
-            "cover": cover, "director": None,
-        }
 
     def fetch(self, code, hint=None):
         std = canon_code(code)
@@ -82,8 +185,9 @@ class JavdbFetcher(Fetcher):
                     page.goto(f"{domain}/search?q={std}&f=all",
                               wait_until="domcontentloaded", timeout=30000)
                     click_age_gate(page)
-                    if not wait_past_cf(page, page.locator("a[href^='/v/'], .item-title a"),
-                                         timeout=60000):
+                    if not wait_past_cf(page,
+                                        page.locator("a[href^='/v/'], .item-title a"),
+                                        timeout=60000):
                         return None
                     link = page.locator("a[href^='/v/']").first
                     if not link.count():
@@ -91,10 +195,15 @@ class JavdbFetcher(Fetcher):
                     href = link.get_attribute("href")
                     if not href:
                         return None
-                    page.goto(domain + href, wait_until="domcontentloaded", timeout=30000)
+                    page.goto(domain + href, wait_until="domcontentloaded",
+                              timeout=30000)
                     click_age_gate(page)
-                    page.wait_for_timeout(2000)
-                    return self._extract(page, std)
+                    page.wait_for_timeout(1500)
+                    html = page.content()
+                    res = parse_javdb_html(html, std)
+                    if res:
+                        res["source_url"] = page.url
+                    return res
                 res = run_with_browser(_go, locale="ja-JP")
                 if res:
                     return res
