@@ -172,6 +172,29 @@ a { color: inherit; text-decoration: none; }
 .body .meta { color: var(--muted); font-size: 11.5px; margin-top: 4px; }
 .card.actress .body .name { text-align: center; }
 
+/* ---- 封面悬停来源图标层 ---- */
+.source-layer {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 4;
+  display: flex; justify-content: center; align-items: center; gap: 7px;
+  padding: 10px 6px 8px;
+  background: linear-gradient(to top, rgba(0,0,0,.72) 0%, rgba(0,0,0,.35) 60%, transparent 100%);
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s ease;
+}
+.card:hover .source-layer { opacity: 1; pointer-events: auto; }
+.source-dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; border-radius: 50%;
+  color: #fff; font-weight: 800; font-size: 11px; line-height: 1;
+  cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  transition: transform .12s, filter .12s;
+  /* 图标文字加描边，双字母也能看清 */
+  text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  user-select: none;
+}
+.source-dot:hover { transform: scale(1.12); filter: brightness(1.12); }
+.source-dot__icon { transform: scale(.92); }
+
 /* ---- chips ---- */
 .chip {
   display: inline-block; background: var(--chip); color: var(--chip-text);

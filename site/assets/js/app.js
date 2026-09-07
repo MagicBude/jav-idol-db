@@ -214,28 +214,43 @@
   function statusClass(code) { return "st-" + (code || "unknown"); }
 
   /* ----------------------------------------------------------------
-     作品详情页外部来源链接模板（按番号实时生成，不写回 JSON）
+     作品外部来源链接模板（按番号实时生成，不写回 JSON）
      - 这些只是「查看/搜索」入口，不表示本站认同其内容或可用性
      - 域名可能变动，改这里即可，无需重跑 build_index
+     - icon: 悬停层徽标文字；color: 悬停层圆点背景色；hover: 是否显示在卡片悬停层
      ---------------------------------------------------------------- */
   var SOURCE_LINKS = [
-    { key: "codeav", labels: { ja: "codeav で見る", zh: "在 codeav 查看" },
-      url: function (c) { return "https://www.codeav.net/movie/" + c.toLowerCase(); } },
+    { key: "javlibrary", labels: { ja: "javlibrary で見る", zh: "在 javlibrary 查看" },
+      icon: "L", color: "#d946ef", hover: true,
+      url: function (c) { return "https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + encodeURIComponent(c.toUpperCase()); } },
     { key: "javbus", labels: { ja: "javbus で見る", zh: "在 javbus 查看" },
+      icon: "B", color: "#f97316", hover: true,
       url: function (c) { return "https://www.javbus.com/" + c.toUpperCase(); } },
     { key: "javdb", labels: { ja: "javdb で検索", zh: "在 javdb 搜索" },
+      icon: "D", color: "#3b82f6", hover: true,
       url: function (c) { return "https://javdb.com/search?q=" + encodeURIComponent(c.toLowerCase()) + "&f=all"; } },
-    { key: "javlibrary", labels: { ja: "javlibrary で見る", zh: "在 javlibrary 查看" },
-      url: function (c) { return "https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + encodeURIComponent(c.toUpperCase()); } },
+    { key: "javmenu", labels: { ja: "javmenu で見る", zh: "在 javmenu 查看" },
+      icon: "M", color: "#10b981", hover: true,
+      url: function (c) { return "https://javmenu.com/" + encodeURIComponent(c.toUpperCase()); } },
+    { key: "missav", labels: { ja: "missav で見る", zh: "在 missav 查看" },
+      icon: "△", color: "#ef4444", hover: true,
+      url: function (c) { return "https://missav.ws/" + encodeURIComponent(c.toUpperCase()); } },
+    { key: "codeav", labels: { ja: "codeav で見る", zh: "在 codeav 查看" },
+      icon: "C", color: "#e8437a", hover: false,
+      url: function (c) { return "https://www.codeav.net/movie/" + c.toLowerCase(); } },
     { key: "javdatabase", labels: { ja: "javdatabase で見る", zh: "在 javdatabase 查看" },
+      icon: "DB", color: "#8b5cf6", hover: false,
       url: function (c) { return "https://www.javdatabase.com/movies/" + c.toLowerCase() + "/"; } },
     { key: "minnanoav", labels: { ja: "みんなのAV で検索", zh: "在 minnanoav 搜索" },
+      icon: "MN", color: "#06b6d4", hover: false,
       url: function (c) { return "https://www.minnano-av.com/search_result.php?search_word=" + encodeURIComponent(c.toUpperCase()); } },
     { key: "avsox", labels: { ja: "avsox で検索", zh: "在 avsox 搜索" },
-      url: function (c) { return "https://avsox.click/cn/search/" + encodeURIComponent(c.toLowerCase()); } },
-    { key: "javmenu", labels: { ja: "javmenu で見る", zh: "在 javmenu 查看" },
-      url: function (c) { return "https://javmenu.com/" + encodeURIComponent(c.toUpperCase()); } }
+      icon: "A", color: "#eab308", hover: false,
+      url: function (c) { return "https://avsox.click/cn/search/" + encodeURIComponent(c.toLowerCase()); } }
   ];
+
+  // 卡片悬停层显示的来源（与 JavBoss 截图对齐：javlibrary / javbus / javdb / javmenu / missav）
+  var HOVER_SOURCES = SOURCE_LINKS.filter(function (s) { return s.hover; });
 
   // 取 UI 文案：当前语言优先，缺省回退中文
   function T(key) {
@@ -349,6 +364,22 @@
     return html;
   }
 
+  /* ---- 作品卡片：封面悬停来源图标 ---- */
+  function sourceOverlay(code) {
+    if (!code) return "";
+    var html = '<span class="source-layer">';
+    HOVER_SOURCES.forEach(function (s) {
+      var href = s.url(code);
+      var label = esc(s.labels[LANG] || s.labels.zh);
+      html += '<span class="source-dot" role="button" tabindex="0" data-href="' + esc(href) + '" title="' + label + '" ' +
+        'style="background:' + esc(s.color) + '" data-key="' + esc(s.key) + '" aria-label="' + label + '">' +
+        '<span class="source-dot__icon">' + esc(s.icon) + '</span>' +
+        '</span>';
+    });
+    html += '</span>';
+    return html;
+  }
+
   /* ---- 作品卡片 ---- */
   function workCard(rec) {
     var w = rec.w;
@@ -360,6 +391,7 @@
         '<div class="thumb">' +
           imgTag(w.cover, w.code, "cover-img") +
           (w.cover ? "" : '<span class="ph">' + esc(w.code) + "</span>") +
+          sourceOverlay(w.code) +
           rating +
           incomplete +
         "</div>" +
@@ -810,6 +842,24 @@
       }
     });
   }
+
+  /* ---- 来源图标点击 / 回车（事件委托，阻止卡片跳转） ---- */
+  function openSourceDot(dot, e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    var href = dot.getAttribute("data-href");
+    if (href) window.open(href, "_blank", "noopener");
+  }
+  document.addEventListener("click", function (e) {
+    var dot = e.target.closest(".source-dot");
+    if (!dot) return;
+    openSourceDot(dot, e);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    var dot = e.target.closest(".source-dot");
+    if (!dot) return;
+    openSourceDot(dot, e);
+  });
 
   /* ---- 启动 ---- */
   window.addEventListener("hashchange", router);
