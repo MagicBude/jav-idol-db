@@ -1,102 +1,107 @@
 @echo off
-chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-:: åˆ‡åˆ°è„šæœ¬æ‰€åœ¨ç›®å½•ï¼ˆä»“åº“æ ¹ç›®å½•ï¼‰
+rem ÇĞµ½½Å±¾ËùÔÚÄ¿Â¼£¨²Ö¿â¸ùÄ¿Â¼£©
 cd /d "%~dp0"
 
 set "PY=C:\Users\Admin\.workbuddy\binaries\python\envs\default\Scripts\python.exe"
+if not exist "%PY%" (
+    echo [ERROR] Python not found: %PY%
+    pause
+    exit /b 1
+)
 set "LOG=.workbuddy\logs\fill_series.log"
 if not exist ".workbuddy\logs" mkdir ".workbuddy\logs"
 
 echo ==========================================
-echo IDOL DB - æœ¬åœ° series è¡¥å…¨å·¥å…·
-echo ä»…å¤„ç†ç¼º series çš„ä½œå“ï¼Œä½¿ç”¨ javmenu + javbus + javdb
-echo å½“å‰ç›®å½•ï¼š%CD%
+echo IDOL DB - series ²¹È«¹¤¾ß
+echo ½ö´¦ÀíÈ± series µÄ×÷Æ·: javmenu + javbus + javdb
+echo µ±Ç°Ä¿Â¼: %CD%
 echo ==========================================
 echo.
 
-:: å…ˆé¢„è§ˆï¼Œç¡®è®¤å‘½ä¸­èŒƒå›´
-echo [1/5] é¢„è§ˆ --dry-runï¼ˆåªç»Ÿè®¡ï¼Œä¸å†™åº“ï¼‰...
+rem ÏÈÔ¤ÀÀ£¬È·ÈÏÃüÖĞ·¶Î§
+echo [1/5] Ô¤ÀÀ --dry-run£¨Ö»Í³¼Æ£¬²»Ğ´¿â£©...
 "%PY%" scripts\update_metadata.py --missing series --sources javmenu,javbus,javdb --dry-run
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo.
-    echo é¢„è§ˆå¤±è´¥ï¼Œè¯·æ£€æŸ¥ä¸Šé¢çš„é”™è¯¯ä¿¡æ¯ã€‚
+    echo Ô¤ÀÀÊ§°Ü£¬Çë¼ì²éÉÏÃæµÄ´íÎóĞÅÏ¢¡£
     pause
     exit /b 1
 )
 echo.
-choice /C YN /M "æ˜¯å¦ç»§ç»­æ­£å¼æŠ“å–ï¼ˆéƒ¨åˆ†æºéœ€è¿‡ Cloudflareï¼Œè€—æ—¶è¾ƒé•¿ï¼‰"
-if %errorlevel% neq 1 (
-    echo å·²å–æ¶ˆã€‚
+choice /C YN /M "ÊÇ·ñ¼ÌĞøÕıÊ½×¥È¡£¨²¿·ÖÔ´Ğè¹ı Cloudflare£¬ºÄÊ±½Ï³¤£©"
+if errorlevel 2 (
+    echo ÒÑÈ¡Ïû¡£
     pause
     exit /b 0
 )
 
-:: æ­£å¼æŠ“å–ï¼šåªè¡¥ seriesï¼Œç”¨ javmenuï¼ˆé™æ€å¿«ï¼‰+ javbus + javdb
+rem ÕıÊ½×¥È¡
 echo.
-echo [2/5] æ­£å¼æŠ“å– javmenu + javbus + javdbï¼ˆç¼º series çš„ 1670 éƒ¨å·¦å³ï¼‰...
-echo æ—¥å¿—å†™å…¥ï¼š%LOG%
+echo [2/5] ÕıÊ½×¥È¡£¨È± series µÄ 1670 ²¿×óÓÒ£©...
+echo ÈÕÖ¾Ğ´Èë: %LOG%
 "%PY%" scripts\update_metadata.py --missing series --sources javmenu,javbus,javdb > "%LOG%" 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo.
-    echo æŠ“å–å¤±è´¥ï¼Œè¯·æŸ¥çœ‹ %LOG%
+    echo ×¥È¡Ê§°Ü£¬Çë²é¿´ %LOG%
     pause
     exit /b 1
 )
 
-:: è·‘åæ¸…æ‰«ï¼šæ ¼å¼å™ªå£°ã€å½’å±ä¿æŠ¤ã€å†²çª cast å›é€€
+rem ÅÜºóÇåÉ¨£º¸ñÊ½ÔëÉù¡¢¹éÊô±£»¤¡¢³åÍ» cast »ØÍË
 echo.
-echo [3/5] æ¸…æ‰«æ ¼å¼å™ªå£°å¹¶ä¿æŠ¤å½’å±å­—æ®µ...
+echo [3/5] ÇåÉ¨¸ñÊ½ÔëÉù²¢±£»¤¹éÊô×Ö¶Î...
 "%PY%" scripts\sweep_works.py >> "%LOG%" 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo.
-    echo æ¸…æ‰«å¤±è´¥ï¼Œè¯·æŸ¥çœ‹ %LOG%
+    echo ÇåÉ¨Ê§°Ü£¬Çë²é¿´ %LOG%
     pause
     exit /b 1
 )
 
-:: é‡å»ºç´¢å¼•
+rem ÖØ½¨Ë÷Òı
 echo.
-echo [4/5] é‡å»ºç«™ç‚¹ç´¢å¼•...
+echo [4/5] ÖØ½¨Õ¾µãË÷Òı...
 "%PY%" scripts\build_index.py >> "%LOG%" 2>&1
-if %errorlevel% neq 0 (
+if errorlevel 1 (
     echo.
-    echo ç´¢å¼•å¤±è´¥ï¼Œè¯·æŸ¥çœ‹ %LOG%
+    echo Ë÷ÒıÊ§°Ü£¬Çë²é¿´ %LOG%
     pause
     exit /b 1
 )
 
 echo.
-echo [5/5] æŠ“å–å®Œæˆï¼
+echo [5/5] ×¥È¡Íê³É£¡
 git status --short
 echo.
 
-choice /C YN /M "æ˜¯å¦æäº¤å¹¶æ¨é€ç»“æœ"
-if %errorlevel% neq 1 (
-    echo ä¸æäº¤ï¼Œç»“æŸã€‚
+choice /C YN /M "ÊÇ·ñÌá½»²¢ÍÆËÍ½á¹û"
+if errorlevel 2 (
+    echo ²»Ìá½»£¬½áÊø¡£
     pause
     exit /b 0
 )
 
 git add data\works data\index.json site\assets\js\data.js
-git commit -m "data(works): è¡¥å…¨ seriesï¼ˆjavmenu+javbus+javdbï¼‰" >> "%LOG%" 2>&1
-if %errorlevel% neq 0 (
+git commit -m "data(works): ²¹È« series£¨javmenu+javbus+javdb£©" >> "%LOG%" 2>&1
+if errorlevel 1 (
     echo.
-    echo æäº¤å¤±è´¥æˆ–æ— æ”¹åŠ¨ã€‚
+    echo Ìá½»Ê§°Ü»òÎŞ¸Ä¶¯¡£
     pause
     exit /b 1
 )
 
-:: ä¼˜å…ˆèµ° SSH over 443ï¼Œéƒ¨åˆ†ç½‘ç»œä¸‹ 22 ä¼šè¢«æ‹¦æˆª
+rem ÓÅÏÈ×ß SSH over 443£¬²¿·ÖÍøÂçÏÂ 22 »á±»À¹½Ø
 set "GIT_SSH_COMMAND=ssh -p 443 -o Hostname=ssh.github.com -o StrictHostKeyChecking=no"
 git push origin main >> "%LOG%" 2>&1
-if %errorlevel% neq 0 (
-    echo SSH-443 æ¨é€å¤±è´¥ï¼Œå°è¯•æ™®é€š SSH...
+if errorlevel 1 (
+    echo SSH-443 ÍÆËÍÊ§°Ü£¬³¢ÊÔÆÕÍ¨ SSH...
     set "GIT_SSH_COMMAND="
     git push origin main
 )
 
 echo.
-echo å…¨éƒ¨å®Œæˆã€‚æ—¥å¿—ï¼š%LOG%
+echo È«²¿Íê³É¡£ÈÕÖ¾: %LOG%
 pause
+
