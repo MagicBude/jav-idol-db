@@ -213,6 +213,30 @@
   }
   function statusClass(code) { return "st-" + (code || "unknown"); }
 
+  /* ----------------------------------------------------------------
+     作品详情页外部来源链接模板（按番号实时生成，不写回 JSON）
+     - 这些只是「查看/搜索」入口，不表示本站认同其内容或可用性
+     - 域名可能变动，改这里即可，无需重跑 build_index
+     ---------------------------------------------------------------- */
+  var SOURCE_LINKS = [
+    { key: "codeav", labels: { ja: "codeav で見る", zh: "在 codeav 查看" },
+      url: function (c) { return "https://www.codeav.net/movie/" + c.toLowerCase(); } },
+    { key: "javbus", labels: { ja: "javbus で見る", zh: "在 javbus 查看" },
+      url: function (c) { return "https://www.javbus.com/" + c.toUpperCase(); } },
+    { key: "javdb", labels: { ja: "javdb で検索", zh: "在 javdb 搜索" },
+      url: function (c) { return "https://javdb.com/search?q=" + encodeURIComponent(c.toLowerCase()) + "&f=all"; } },
+    { key: "javlibrary", labels: { ja: "javlibrary で見る", zh: "在 javlibrary 查看" },
+      url: function (c) { return "https://www.javlibrary.com/cn/vl_searchbyid.php?keyword=" + encodeURIComponent(c.toUpperCase()); } },
+    { key: "javdatabase", labels: { ja: "javdatabase で見る", zh: "在 javdatabase 查看" },
+      url: function (c) { return "https://www.javdatabase.com/movies/" + c.toLowerCase() + "/"; } },
+    { key: "minnanoav", labels: { ja: "みんなのAV で検索", zh: "在 minnanoav 搜索" },
+      url: function (c) { return "https://www.minnano-av.com/search_result.php?search_word=" + encodeURIComponent(c.toUpperCase()); } },
+    { key: "avsox", labels: { ja: "avsox で検索", zh: "在 avsox 搜索" },
+      url: function (c) { return "https://avsox.click/cn/search/" + encodeURIComponent(c.toLowerCase()); } },
+    { key: "javmenu", labels: { ja: "javmenu で見る", zh: "在 javmenu 查看" },
+      url: function (c) { return "https://javmenu.com/" + encodeURIComponent(c.toUpperCase()); } }
+  ];
+
   // 取 UI 文案：当前语言优先，缺省回退中文
   function T(key) {
     var d = UI[LANG] || UI.zh;
@@ -566,23 +590,30 @@
     var tagList = (w.labels || []).concat(w.tags || []);
     var tagHtml = chips("t", tagList);
 
-    // 外部链接
+    // 外部链接（去重合并：手工链接 > 预告片 > 数据来源 > DMM > 各来源模板）
+    var seenUrls = {};
     var ext = "";
+    function addExt(label, href) {
+      if (!href || seenUrls[href]) return;
+      seenUrls[href] = 1;
+      ext += '<a class="extbtn" href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(label) + " ↗</a>";
+    }
     if (w.external_links) {
       var links = w.external_links;
       if (typeof links === "string") links = { "链接": links };
-      Object.keys(links).forEach(function (k) {
-        if (links[k]) ext += '<a class="extbtn" href="' + esc(links[k]) + '" target="_blank" rel="noopener">' + esc(k) + " ↗</a>";
-      });
+      Object.keys(links).forEach(function (k) { addExt(k, links[k]); });
     }
-    if (w.trailer) ext += '<a class="extbtn" href="' + esc(w.trailer) + '" target="_blank" rel="noopener">观看预告片 ▶</a>';
+    if (w.trailer) addExt("观看预告片 ▶", w.trailer);
     if (w.source_url) {
       var srcLabel = w.source
         ? (LANG === "zh" ? "在 " + w.source + " 查看" : w.source + " で見る")
         : (LANG === "zh" ? "数据源" : "データソース");
-      ext += '<a class="extbtn" href="' + esc(w.source_url) + '" target="_blank" rel="noopener">' + esc(srcLabel) + " ↗</a>";
+      addExt(srcLabel, w.source_url);
     }
-    if (w.code) ext += '<a class="extbtn" href="https://www.dmm.co.jp/search/=/searchstr=' + enc(w.code) + '" target="_blank" rel="noopener">在 DMM 搜索 ↗</a>';
+    if (w.code) {
+      addExt(LANG === "zh" ? "在 DMM 搜索" : "DMM で検索", "https://www.dmm.co.jp/search/=/searchstr=" + enc(w.code));
+      SOURCE_LINKS.forEach(function (s) { addExt(s.labels[LANG] || s.labels.zh, s.url(w.code)); });
+    }
 
     return (
       '<div class="crumb"><a href="#/">' + esc(T("home_title")) + '</a> / <a href="#/a/' + enc(rec.owner || "") + '">' +
