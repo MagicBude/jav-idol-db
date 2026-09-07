@@ -27,6 +27,7 @@ from sources.minnanoav import MinnanoavActressFetcher  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ACTRESS_DIR = os.path.join(ROOT, "data", "actresses")
+ALIAS_FILE = os.path.join(ROOT, "data", "actress", "alias.json")
 
 # minnano 字段 → profile.json 字段（同名直填）
 FILL_FIELDS = [
@@ -98,10 +99,16 @@ def main():
     ap.add_argument("--name", help="只处理指定女优（目录名）")
     ap.add_argument("--query", help="检索名覆盖（目录名与 minnano 正式名不一致时用，"
                                      "如目录 永野一夏 / 正式名 永野いち夏），须与 --name 同用")
+    ap.add_argument("--sync-alias", action="store_true",
+                    help="把各 profile 的 minnano 別名并入 data/actress/alias.json 对应簇")
     ap.add_argument("--rebuild", action="store_true", help="完成后重建站点索引")
     args = ap.parse_args()
     if args.query and not args.name:
         ap.error("--query 必须与 --name 同用")
+
+    if args.sync_alias:
+        sync_alias(apply=args.apply)
+        return
 
     names = sorted(
         d for d in os.listdir(ACTRESS_DIR)
@@ -147,6 +154,62 @@ def main():
         import subprocess
         subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "build_index.py")],
                        check=True)
+
+
+def sync_alias(apply=False):
+    """把 profile.json 里的 minnano 別名并入 alias.json 对应簇。
+
+    规则：
+    - 女优必须在 alias.json 已有簇（key 或成员），否则跳过并提示（不擅自建簇）
+    - 目标名若是其他簇的 canonical key → 跳过（防跨簇污染）
+    - 纯 ASCII 且 <5 字符的別名跳过（如 MOE，极易与其他数据撞名）
+    """
+    with open(ALIAS_FILE, encoding="utf-8") as f:
+        alias = json.load(f)
+
+    def find_cluster(name):
+        if name in alias:
+            return alias[name]
+        for v in alias.values():
+            if name in v:
+                return v
+        return None
+
+    names = sorted(
+        d for d in os.listdir(ACTRESS_DIR)
+        if os.path.isdir(os.path.join(ACTRESS_DIR, d))
+    )
+    total = 0
+    for name in names:
+        profile, _ = load_profile(name)
+        cluster = find_cluster(name)
+        if cluster is None:
+            print(f"[SKIP] {name}: alias.json 无此簇")
+            continue
+        added = []
+        for al in profile.get("aliases") or []:
+            if al == name or al in cluster or al in alias:
+                continue
+            if len(al) < 5 and al.isascii():
+                print(f"[SKIP] {name}: 別名 {al!r} 过短（ASCII），防撞名不并入")
+                continue
+            cluster.append(al)
+            added.append(al)
+        if added:
+            total += len(added)
+            print(f"[ALIAS] {name}: +{', '.join(added)}")
+        else:
+            print(f"[KEEP] {name}: 簇已完整")
+    if not total:
+        print("alias.json 无需变更")
+        return
+    if apply:
+        with open(ALIAS_FILE, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(alias, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"已写入 {ALIAS_FILE}（共 +{total} 个別名）")
+    else:
+        print(f"DRY-RUN：将新增 {total} 个別名（--apply 落盘）")
 
 
 if __name__ == "__main__":
