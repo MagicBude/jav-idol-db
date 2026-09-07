@@ -237,6 +237,9 @@ a { color: inherit; text-decoration: none; }
 .st-unknown { background: #fbeef3; color: #b8456b; border: 1px solid #f3c9da; }
 .pinfo .row { font-size: 14px; color: var(--pinfo-text); margin: 3px 0; }
 .pinfo .row b { color: var(--muted); font-weight: 600; margin-right: 4px; }
+.pinfo .row a { color: var(--accent, #4a7dbf); text-decoration: none; word-break: break-all; }
+.pinfo .row a:hover { text-decoration: underline; }
+.pinfo .sub-name { font-size: 13px; color: var(--muted); margin: -6px 0 8px; }
 
 /* ---- 作品详情 ---- */
 .detail { display: flex; gap: 26px; align-items: flex-start; }

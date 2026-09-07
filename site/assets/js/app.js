@@ -101,6 +101,14 @@
       f_status: "ステータス",
       f_retire: "引退日",
       f_comeback: "復帰日",
+      f_reading: "読み",
+      f_roman: "ローマ字",
+      f_hobby: "趣味・特技",
+      f_career: "出演期間",
+      f_debut_work: "デビュー作",
+      f_blog: "ブログ",
+      f_site: "公式サイト",
+      f_minnano: "みんなのAV",
       f_status_src: "状態出典",
       f_works: "作品数",
       f_span: "活動年",
@@ -172,6 +180,14 @@
       f_status: "状态",
       f_retire: "引退日期",
       f_comeback: "复出日期",
+      f_reading: "读音",
+      f_roman: "罗马名",
+      f_hobby: "兴趣特长",
+      f_career: "出演期间",
+      f_debut_work: "出道作品",
+      f_blog: "博客 / 社媒",
+      f_site: "官方网站",
+      f_minnano: "minnano 档案",
       f_status_src: "状态来源",
       f_works: "作品数",
       f_span: "活动年份",
@@ -495,7 +511,11 @@
         '<div class="avatar">' + imgTag(a.avatar, a.name) + (a.avatar ? "" : esc(actressName(a.name))) + "</div>" +
         "<div class=\"pinfo\">" +
           "<h1>" + esc(actressName(a.name)) + "</h1>" +
-          '<span class="status-badge ' + statusClass(a.status) + '">' + esc(statusText(a.status)) + '</span>' +
+          '<span class="status-badge ' + statusClass(a.status) + '">' + esc(statusText(a.status)) + "</span>" +
+          ((a.reading || a.roman_name) ? '<div class="row sub-name">' +
+            (a.reading ? esc(a.reading) : "") +
+            (a.reading && a.roman_name ? " / " : "") +
+            (a.roman_name ? esc(a.roman_name) : "") + "</div>" : "") +
           (a.aliases && a.aliases.length ? '<div class="row">' + esc(T("f_aliases")) + '：' + a.aliases.map(esc).join("、") + "</div>" : "") +
           (a.birthdate ? '<div class="row">' + esc(T("f_birth")) + '：' + esc(a.birthdate) + "</div>" : "") +
           (a.birthplace ? '<div class="row">' + esc(T("f_birthplace")) + '：' + esc(a.birthplace) + "</div>" : "") +
@@ -505,7 +525,13 @@
           (a.debut_date ? '<div class="row">' + esc(T("f_debut")) + "：" + esc(a.debut_date) + "</div>" : (a.debut_year ? '<div class="row">' + esc(T("f_debut")) + "：" + esc(a.debut_year) + " 年</div>" : "")) +
           (a.retire_date ? '<div class="row">' + esc(T("f_retire")) + "：" + esc(a.retire_date) + "</div>" : "") +
           (a.comeback_date ? '<div class="row">' + esc(T("f_comeback")) + "：" + esc(a.comeback_date) + "</div>" : "") +
+          (a.career_periods ? '<div class="row">' + esc(T("f_career")) + "：" + esc(a.career_periods) + "</div>" : "") +
           (a.agency ? '<div class="row">' + esc(T("f_agency")) + '：' + esc(a.agency) + "</div>" : "") +
+          (a.hobby ? '<div class="row">' + esc(T("f_hobby")) + '：' + esc(a.hobby) + "</div>" : "") +
+          (a.debut_work ? '<div class="row">' + esc(T("f_debut_work")) + '：' + esc(a.debut_work) + "</div>" : "") +
+          (a.blog ? '<div class="row">' + esc(T("f_blog")) + '：<a href="' + esc(a.blog) + '" target="_blank" rel="noopener">' + esc(a.blog) + "</a></div>" : "") +
+          (a.official_site ? '<div class="row">' + esc(T("f_site")) + '：<a href="' + esc(a.official_site) + '" target="_blank" rel="noopener">' + esc(a.official_site) + "</a></div>" : "") +
+          (a.minnano_url ? '<div class="row">' + esc(T("f_minnano")) + '：<a href="' + esc(a.minnano_url) + '" target="_blank" rel="noopener">minnano-av.com ↗</a></div>' : "") +
           (a.status_source ? '<div class="row">' + esc(T("f_status_src")) + "：" + esc(a.status_source) + "</div>" : "") +
           '<div class="row">' + esc(T("f_works")) + "：" + (a.work_count || 0) + " " + esc(T("f_works")) + "</div>" +
           (ds.length ? '<div class="row">' + esc(T("f_span")) + "：" + esc(span) + "</div>" : "") +
