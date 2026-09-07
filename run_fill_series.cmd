@@ -11,14 +11,14 @@ if not exist ".workbuddy\logs" mkdir ".workbuddy\logs"
 
 echo ==========================================
 echo IDOL DB - 本地 series 补全工具
-echo 仅处理缺 series 的作品，使用 javbus + javdb
+echo 仅处理缺 series 的作品，使用 javmenu + javbus + javdb
 echo 当前目录：%CD%
 echo ==========================================
 echo.
 
 :: 先预览，确认命中范围
 echo [1/5] 预览 --dry-run（只统计，不写库）...
-"%PY%" scripts\update_metadata.py --missing series --sources javbus,javdb --dry-run
+"%PY%" scripts\update_metadata.py --missing series --sources javmenu,javbus,javdb --dry-run
 if %errorlevel% neq 0 (
     echo.
     echo 预览失败，请检查上面的错误信息。
@@ -26,18 +26,18 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 echo.
-choice /C YN /M "是否继续正式抓取（会过 Cloudflare，耗时较长）"
+choice /C YN /M "是否继续正式抓取（部分源需过 Cloudflare，耗时较长）"
 if %errorlevel% neq 1 (
     echo 已取消。
     pause
     exit /b 0
 )
 
-:: 正式抓取：只补 series，只用 javbus + javdb
+:: 正式抓取：只补 series，用 javmenu（静态快）+ javbus + javdb
 echo.
-echo [2/5] 正式抓取 javbus + javdb（缺 series 的 1670 部左右）...
+echo [2/5] 正式抓取 javmenu + javbus + javdb（缺 series 的 1670 部左右）...
 echo 日志写入：%LOG%
-"%PY%" scripts\update_metadata.py --missing series --sources javbus,javdb > "%LOG%" 2>&1
+"%PY%" scripts\update_metadata.py --missing series --sources javmenu,javbus,javdb > "%LOG%" 2>&1
 if %errorlevel% neq 0 (
     echo.
     echo 抓取失败，请查看 %LOG%
@@ -80,7 +80,7 @@ if %errorlevel% neq 1 (
 )
 
 git add data\works data\index.json site\assets\js\data.js
-git commit -m "data(works): 补全 series（javbus+javdb）" >> "%LOG%" 2>&1
+git commit -m "data(works): 补全 series（javmenu+javbus+javdb）" >> "%LOG%" 2>&1
 if %errorlevel% neq 0 (
     echo.
     echo 提交失败或无改动。

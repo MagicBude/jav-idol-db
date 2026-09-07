@@ -3,7 +3,7 @@
 update_metadata.py —— 多源自主回补编排器
 ================================================================
 把零散抓取器串成一条可重复跑、幂等的回补链：
-    codeav → fanza → javlibrary → [--hard: javbus, javdb, javdatabase] → websearch
+    codeav → fanza → javlibrary → [--hard: javmenu, javbus, javdb, javdatabase] → websearch
 
 用法：
   # 回补所有 pending（缺标题/发行日的）作品
@@ -41,7 +41,8 @@ sys.path.insert(0, HERE)
 
 from sources import (
     CHAIN, CodeavFetcher, FanzaFetcher, JavlibraryFetcher,
-    JavbusFetcher, JavdbFetcher, JavdatabaseFetcher, WebSearchFetcher,
+    JavmenuFetcher, JavbusFetcher, JavdbFetcher, JavdatabaseFetcher,
+    WebSearchFetcher,
     canon_code, merge_work, attribution_conflict,
 )
 from sources.base import _is_empty
@@ -93,7 +94,8 @@ def collect_targets(args):
 def build_chain(use_hard):
     chain = [CodeavFetcher(), FanzaFetcher(), JavlibraryFetcher()]
     if use_hard:
-        chain += [JavbusFetcher(), JavdbFetcher(), JavdatabaseFetcher()]
+        # javmenu 静态可达（无 CF），排在 CF 重源前面先跑
+        chain += [JavmenuFetcher(), JavbusFetcher(), JavdbFetcher(), JavdatabaseFetcher()]
     chain.append(WebSearchFetcher())
     return chain
 
@@ -102,7 +104,8 @@ def build_chain_from_args(args):
     if args.sources:
         name_map = {
             "codeav": CodeavFetcher, "fanza": FanzaFetcher,
-            "javlibrary": JavlibraryFetcher, "javbus": JavbusFetcher,
+            "javlibrary": JavlibraryFetcher, "javmenu": JavmenuFetcher,
+            "javbus": JavbusFetcher,
             "javdb": JavdbFetcher, "javdatabase": JavdatabaseFetcher,
             "websearch": WebSearchFetcher,
         }
@@ -145,7 +148,7 @@ def main():
     ap.add_argument("--code", nargs="*", help="指定番号")
     ap.add_argument("--pending", action="store_true", help="只处理缺标题/待补的")
     ap.add_argument("--all", action="store_true", help="全部重跑（填空缺字段）")
-    ap.add_argument("--hard", action="store_true", help="启用 javbus/javdb（攻克模式）")
+    ap.add_argument("--hard", action="store_true", help="启用 javmenu/javbus/javdb（攻克模式）")
     ap.add_argument("--limit", type=int, default=0, help="最多处理 N 个")
     ap.add_argument("--dry-run", action="store_true", help="不落盘")
     ap.add_argument("--fix-attribution", action="store_true", help="自动搬移放错目录的作品")
@@ -182,6 +185,7 @@ def main():
                 existing = {}
 
         filled_from = None
+        work_changed = False   # 只有真变更才落盘，避免未命中文件被无脑重写产生伪 diff
         for fetcher in chain:
             try:
                 res = fetcher.fetch(std, hint=dir_actress)
@@ -192,6 +196,7 @@ def main():
                 continue
             changed = merge_work(existing, res)
             if changed:
+                work_changed = True
                 filled_from = fetcher.name
                 stats["by_source"][fetcher.name] = stats["by_source"].get(fetcher.name, 0) + 1
                 print(f"    [{fetcher.name}] + " +
@@ -222,14 +227,15 @@ def main():
                     existing["actress"] = suggested
                     if suggested not in existing.get("actresses", []):
                         existing.setdefault("actresses", []).append(suggested)
+                    work_changed = True
                     stats["attrib_moved"] += 1
                     print(f"    [归属修正] {dir_actress} → {suggested}", flush=True)
                 else:
                     stats["attrib_flagged"] += 1
                     print(f"    [归属冲突] dir={dir_actress} vs fetched={fetched_actresses}", flush=True)
 
-        # 落盘
-        if path and os.path.exists(path) and not args.dry_run:
+        # 落盘（仅在有真实变更时）
+        if work_changed and path and os.path.exists(path) and not args.dry_run:
             _save_work(path, existing)
 
     # 收尾
