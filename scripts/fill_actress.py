@@ -95,9 +95,13 @@ def save_profile(path, data):
 def main():
     ap = argparse.ArgumentParser(description="minnanoav 女优档案补全")
     ap.add_argument("--apply", action="store_true", help="正式写盘（默认 dry-run）")
-    ap.add_argument("--name", help="只处理指定女优")
+    ap.add_argument("--name", help="只处理指定女优（目录名）")
+    ap.add_argument("--query", help="检索名覆盖（目录名与 minnano 正式名不一致时用，"
+                                     "如目录 永野一夏 / 正式名 永野いち夏），须与 --name 同用")
     ap.add_argument("--rebuild", action="store_true", help="完成后重建站点索引")
     args = ap.parse_args()
+    if args.query and not args.name:
+        ap.error("--query 必须与 --name 同用")
 
     names = sorted(
         d for d in os.listdir(ACTRESS_DIR)
@@ -113,14 +117,15 @@ def main():
     stats = {"hit": 0, "miss": 0, "changed": 0, "error": 0}
     for name in names:
         existing, path = load_profile(name)
+        query = args.query if args.query and name == args.name else name
         try:
-            fetched = fetcher.lookup_actress(name)
+            fetched = fetcher.lookup_actress(query)
         except Exception as e:
             print(f"[ERR ] {name}: {type(e).__name__} {e}")
             stats["error"] += 1
             continue
         if not fetched:
-            print(f"[MISS] {name}: minnanoav 未命中")
+            print(f"[MISS] {name}: minnanoav 未命中（query={query}）")
             stats["miss"] += 1
             continue
         stats["hit"] += 1
