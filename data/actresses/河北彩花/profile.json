@@ -1,6 +1,8 @@
 {
   "name": "河北彩花",
-  "aliases": [],
+  "aliases": [
+    "河北彩伽"
+  ],
   "birthdate": "1999-04-24",
   "height": 169,
   "measurements": "B87/W57/H86",
@@ -8,12 +10,24 @@
   "avatar": "https://awsimgsrc.dmm.co.jp/pics_dig/mono/actjpgs/kawakita_saika.jpg",
   "bio": "2018年以S1专属身份出道，隶属T-POWERS事务所，以压倒性透明感美少女形象著称，曾一度引退后于2021年复出，并涉足歌手活动。",
   "source": "researched",
-  "updated_at": "2026-08-28",
+  "updated_at": "2026-09-07",
   "birthplace": "千葉県",
   "blood_type": "O",
   "cup": "E",
   "debut_year": 2018,
   "status": "active",
   "status_source": "works-recency",
-  "debut_date": "2018-04-14"
+  "debut_date": "2018-04-14",
+  "bust": 87,
+  "waist": 57,
+  "hips": 86,
+  "hobby": "映画鑑賞, ミュージカル鑑賞, 記憶力",
+  "blog": "https://twitter.com/Saika_Kawakita",
+  "official_site": "https://www.t-powers.co.jp/talent/kawakitasaika/",
+  "debut_work": "新人NO.1STYLE 河北彩花AVデビュー（2018年04月 19日）",
+  "career_periods": "2018年、2021年 -",
+  "reading": "かわきたさいか",
+  "roman_name": "Kawakita Saika",
+  "photo_url": "https://www.minnano-av.com/p_actress_125_125/018/945093.jpg?newav",
+  "minnano_url": "https://www.minnano-av.com/actress945093.html"
 }
