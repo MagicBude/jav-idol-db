@@ -44,6 +44,7 @@ from sources import (
     JavbusFetcher, JavdbFetcher, JavdatabaseFetcher, WebSearchFetcher,
     canon_code, merge_work, attribution_conflict,
 )
+from sources.base import _is_empty
 
 DATA = os.path.join(ROOT, "data", "works")
 
@@ -74,6 +75,11 @@ def collect_targets(args):
             targets.append((None, std, p))
             continue
         hint = w.get("actress")
+        if args.missing:
+            # 只处理指定字段为空的作品（如 --missing series 攻克系列缺口）
+            if _is_empty(w.get(args.missing)):
+                targets.append((hint, std, p))
+            continue
         if args.all:
             targets.append((hint, std, p))
         elif args.pending:
@@ -110,6 +116,30 @@ def build_chain_from_args(args):
     return build_chain(args.hard)
 
 
+def _detect_indent(path):
+    """探测既有文件的缩进空格数（data/works 历史上有 indent=1 / indent=2 并存）。"""
+    try:
+        raw = open(path, "rb").read(8192)
+    except Exception:
+        return 2
+    for line in raw.split(b"\n"):
+        if line[:1] in (b" ", b"\t"):
+            lead = len(line) - len(line.lstrip(b" \t"))
+            if lead >= 1:
+                return lead
+    return 2
+
+
+def _save_work(path, data):
+    """落盘单个作品：保留原缩进 + 强制 LF，避免整份重写噪声。"""
+    indent = _detect_indent(path)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(data, f, ensure_ascii=False, indent=indent)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--code", nargs="*", help="指定番号")
@@ -121,10 +151,12 @@ def main():
     ap.add_argument("--fix-attribution", action="store_true", help="自动搬移放错目录的作品")
     ap.add_argument("--no-websearch", action="store_true", help="禁用 websearch 兜底")
     ap.add_argument("--sources", default="", help="仅用指定源(逗号分隔)，如 codeav,javlibrary")
+    ap.add_argument("--missing", default="",
+                    help="只处理指定字段为空的作品（如 series），与 --all 互斥、用于攻克特定缺口")
     args = ap.parse_args()
 
-    if not (args.code or args.pending or args.all):
-        ap.error("需指定 --code / --pending / --all 之一")
+    if not (args.code or args.pending or args.all or args.missing):
+        ap.error("需指定 --code / --pending / --all / --missing 之一")
 
     targets = collect_targets(args)
     if args.limit:
@@ -198,8 +230,7 @@ def main():
 
         # 落盘
         if path and os.path.exists(path) and not args.dry_run:
-            json.dump(existing, open(path, "w", encoding="utf-8"),
-                      ensure_ascii=False, indent=1)
+            _save_work(path, existing)
 
     # 收尾
     for f in chain:
@@ -210,10 +241,12 @@ def main():
 
     if pending_review and not args.dry_run:
         json.dump(pending_review, open(os.path.join(ROOT, "data", "pending_review.json"),
-                                        "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                                        "w", encoding="utf-8", newline="\n"),
+                  ensure_ascii=False, indent=1)
     if attrib_report and not args.dry_run:
         json.dump(attrib_report, open(os.path.join(ROOT, "data", "attribution_report.json"),
-                                       "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+                                       "w", encoding="utf-8", newline="\n"),
+                  ensure_ascii=False, indent=1)
 
     print("\n================ 回补统计 ================")
     print(f"  目标总数     : {stats['total']}")
