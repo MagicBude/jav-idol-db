@@ -109,6 +109,11 @@
       f_blog: "ブログ",
       f_site: "公式サイト",
       f_minnano: "みんなのAV",
+      f_name_zh: "中国語名",
+      f_baike: "百度百科",
+      f_baike_search: "百度百科で検索",
+      f_aliases_zh: "中国語別名",
+      f_notable: "代表作",
       f_status_src: "状態出典",
       f_works: "作品数",
       f_span: "活動年",
@@ -188,6 +193,13 @@
       f_blog: "博客 / 社媒",
       f_site: "官方网站",
       f_minnano: "minnano 档案",
+      f_name_zh: "中文名",
+      f_baike: "百度百科",
+      f_baike_search: "搜索百度百科",
+      f_aliases_zh: "中文别名",
+      f_notable: "代表作",
+      f_aliases_zh: "中文别名",
+      f_notable: "代表作",
       f_status_src: "状态来源",
       f_works: "作品数",
       f_span: "活动年份",
@@ -532,6 +544,12 @@
           (a.blog ? '<div class="row">' + esc(T("f_blog")) + '：<a href="' + esc(a.blog) + '" target="_blank" rel="noopener">' + esc(a.blog) + "</a></div>" : "") +
           (a.official_site ? '<div class="row">' + esc(T("f_site")) + '：<a href="' + esc(a.official_site) + '" target="_blank" rel="noopener">' + esc(a.official_site) + "</a></div>" : "") +
           (a.minnano_url ? '<div class="row">' + esc(T("f_minnano")) + '：<a href="' + esc(a.minnano_url) + '" target="_blank" rel="noopener">minnano-av.com ↗</a></div>' : "") +
+          (a.name_zh ? '<div class="row">' + esc(T("f_name_zh")) + '：' + esc(a.name_zh) + "</div>" : "") +
+          (a.aliases_zh && a.aliases_zh.length ? '<div class="row">' + esc(T("f_aliases_zh")) + '：' + a.aliases_zh.map(esc).join("、") + "</div>" : "") +
+          (a.notable_work ? '<div class="row">' + esc(T("f_notable")) + '：' + esc(a.notable_work) + "</div>" : "") +
+          (a.baike_url
+            ? '<div class="row">' + esc(T("f_baike")) + '：<a href="' + esc(a.baike_url) + '" target="_blank" rel="noopener">baike.baidu.com ↗</a></div>'
+            : '<div class="row">' + esc(T("f_baike")) + '：<a href="https://baike.baidu.com/search?word=' + encodeURIComponent(a.name_zh || actressName(a.name)) + '" target="_blank" rel="noopener">' + esc(T("f_baike_search")) + " ↗</a></div>") +
           (a.status_source ? '<div class="row">' + esc(T("f_status_src")) + "：" + esc(a.status_source) + "</div>" : "") +
           '<div class="row">' + esc(T("f_works")) + "：" + (a.work_count || 0) + " " + esc(T("f_works")) + "</div>" +
           (ds.length ? '<div class="row">' + esc(T("f_span")) + "：" + esc(span) + "</div>" : "") +
