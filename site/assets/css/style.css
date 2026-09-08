@@ -9,6 +9,7 @@
 /* ---------- 1. Reset & base ---------- */
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
   font-family: "Hiragino Sans", "Yu Gothic", "Noto Sans JP", "Noto Sans SC",
     system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -108,6 +109,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
   transition: all .14s;
 }
+.icon-btn { transition: background .14s, border-color .14s, color .14s; }
 .icon-btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
 .icon-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
 
@@ -139,6 +141,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
   background: var(--surface); border: 1px solid var(--border);
   color: var(--text); font-size: 13px; font-weight: 600; transition: all .14s;
 }
+.chip { transition: color .14s, border-color .14s, background .14s; }
 .chip:hover { border-color: var(--accent); color: var(--accent-text); background: var(--accent-weak); }
 
 /* ---------- 5. Grid & cards ---------- */
@@ -155,6 +158,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
   transition: transform .15s, border-color .15s, box-shadow .15s;
 }
 .card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
+.card:active { transform: translateY(0) scale(.992); }
 
 .card .thumb { position: relative; aspect-ratio: 2 / 3; background: var(--surface-2); overflow: hidden; }
 .card .img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
@@ -204,6 +208,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .grid--list .card .code { min-width: 108px; }
 .grid--list .card .title { -webkit-line-clamp: 1; flex: 1; min-width: 180px; }
 .grid--list .card .meta { margin-top: 0; margin-left: auto; white-space: nowrap; }
+.grid--list .card:hover { transform: none !important; box-shadow: none !important; background: var(--surface-2); border-color: var(--border-strong); }
 
 /* 女优卡片（始终竖版） */
 .card.actress .thumb { aspect-ratio: 2 / 3; }
@@ -216,7 +221,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .crumb a:hover { color: var(--accent-text); }
 .crumb b { color: var(--text); }
 .detail { display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start; }
-.detail .poster { border-radius: var(--radius); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+.detail .poster { border-radius: var(--radius); overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); box-shadow: var(--shadow); }
 .detail .poster img { width: 100%; display: block; }
 .detail .dinfo h1 { font-size: 22px; }
 .detail .code { color: var(--muted); font-size: 14px; margin-top: 4px; font-weight: 600; }
@@ -253,6 +258,8 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm); }
 .stat-card .num { font-size: 30px; font-weight: 800; color: var(--accent-text); }
 .stat-card .lbl { color: var(--muted); font-size: 13px; margin-top: 4px; }
+.stat-card { transition: transform .16s, box-shadow .16s, border-color .16s; }
+.stat-card:hover { transform: translateY(-3px); border-color: var(--border-strong); box-shadow: var(--shadow); }
 .bars { display: flex; flex-direction: column; gap: 7px; }
 .bar-row { display: grid; grid-template-columns: 64px 1fr 56px; align-items: center; gap: 12px; font-size: 13px; }
 .bar-lbl { color: var(--muted); }
@@ -264,6 +271,8 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .rank li a { font-weight: 600; color: var(--text); }
 .rank li a:hover { color: var(--accent-text); }
 .rank .rc { color: var(--muted); font-size: 13px; font-weight: 700; }
+.rank li { transition: border-color .15s, background .15s; }
+.rank li:hover { border-color: var(--accent); background: var(--accent-weak); }
 
 /* ---------- 9. Inline grouping (作品按年份/片商) ---------- */
 .wg { margin-top: 24px; }
@@ -271,9 +280,11 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .wg-head .n { color: var(--muted); font-size: 12px; font-weight: 600; }
 
 /* ---------- 10. Filter modal ---------- */
-.modal-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(15,18,28,.45); display: none; }
-.modal-scrim.open { display: block; }
-.modal { position: fixed; z-index: 90; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(480px, 92vw); max-height: 86vh; overflow: auto; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: var(--shadow-lg); }
+.modal-scrim { position: fixed; inset: 0; z-index: 80; background: rgba(15,18,28,.45); display: none; opacity: 0; transition: opacity .18s ease; }
+.modal-scrim.open { display: block; opacity: 1; }
+.modal { position: fixed; z-index: 90; top: 50%; left: 50%; transform: translate(-50%,-50%); width: min(480px, 92vw); max-height: 86vh; overflow: auto; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 14px;   box-shadow: var(--shadow-lg); }
+.modal-scrim.open .modal { animation: modalIn .22s ease both; }
+@keyframes modalIn { from { opacity: 0; transform: translate(-50%, -50%) scale(.96); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--border); }
 .modal-head h3 { font-size: 16px; }
 .modal-x { width: 30px; height: 30px; font-size: 14px; border-radius: 8px; }
@@ -282,7 +293,7 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .fld input { padding: 9px 12px; border: 1px solid var(--border-strong); border-radius: 9px; font-size: 14px; color: var(--text); background: var(--surface); }
 .fld input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-weak); }
 .modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); }
-.btn { padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 700; border: 1px solid var(--border-strong); }
+.btn { padding: 9px 16px; border-radius: 9px; font-size: 13.5px; font-weight: 700; border: 1px solid var(--border-strong); transition: all .14s; }
 .btn.ghost { background: var(--surface); color: var(--muted); }
 .btn.ghost:hover { background: var(--surface-2); }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
