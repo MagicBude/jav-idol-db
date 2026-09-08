@@ -147,6 +147,21 @@ def parse_javbus_html(html, std):
             if cover:
                 break
 
+    # 预览图（缩略图集）：JavBoss 同款选择器，取 data-src/data-original/src（去重）
+    sample_images = []
+    seen_s = set()
+    for xp in (".//*[@id='sample-waterfall']//a",
+               ".//*[@class and contains(concat(' ', normalize-space(@class), ' '), ' sample-waterfall ')]//a",
+               ".//*[@class and contains(concat(' ', normalize-space(@class), ' '), ' image-gallery-section ')]//a",
+               ".//a[contains(concat(' ', normalize-space(@class), ' '), ' tile-item ')]"):
+        for a in doc.xpath(xp):
+            for attr in ("data-src", "data-original", "data-lazy-src", "src"):
+                u = a.get(attr)
+                if u and u not in seen_s:
+                    seen_s.add(u)
+                    sample_images.append(u)
+                    break
+
     if not title:
         return None
     return {
@@ -155,7 +170,7 @@ def parse_javbus_html(html, std):
         "actresses": actresses, "maker": maker, "label": None,
         "series": series, "duration": duration, "tags": tags,
         "synopsis": None, "rating": None, "rating_count": None,
-        "cover": cover, "director": director,
+        "cover": cover, "director": director, "sample_images": sample_images,
     }
 
 

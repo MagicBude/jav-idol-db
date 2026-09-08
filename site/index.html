@@ -8,14 +8,8 @@
   <link rel="stylesheet" href="assets/css/style.css" />
 </head>
 <body>
-  <div class="scrim" id="scrim"></div>
-  <div class="app-shell">
-    <aside class="sidebar" id="sidebar"><!-- 由 layout.mountChrome 填充 --></aside>
-    <div class="main">
-      <header class="topbar" id="topbar"><!-- 由 layout.mountChrome 填充 --></header>
-      <main class="content" id="app"><!-- 由 router 填充 --></main>
-    </div>
-  </div>
+  <header class="topbar" id="topbar"><!-- 由 layout.mountChrome 填充 --></header>
+  <main class="content" id="app"><!-- 由 router 填充 --></main>
 
   <!-- 数据（build_index.py 生成）：经典脚本先执行，挂载 window.JAV_DB -->
   <script src="assets/js/data.js"></script>

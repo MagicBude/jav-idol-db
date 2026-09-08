@@ -1,4 +1,5 @@
 // router.js — hash 路由：解析 #/... 并渲染对应视图到 #app
+// 支持 #/filter?q=...&maker=... 形式的查询字符串（组合筛选弹窗）。
 import { dec, esc } from "./core/util.js";
 import { T } from "./core/i18n.js";
 import { paintChrome } from "./components/layout.js";
@@ -9,8 +10,14 @@ export function route(opts) {
   var app = document.getElementById("app");
   if (!app) return;
 
+  // 拆分 path 与 query string
   var h = (location.hash || "#/").slice(1);
-  var parts = h.split("/").filter(Boolean);
+  var qi = h.indexOf("?");
+  var path = qi >= 0 ? h.slice(0, qi) : h;
+  var qs = qi >= 0 ? h.slice(qi + 1) : "";
+  var sp = new URLSearchParams(qs);
+
+  var parts = path.split("/").filter(Boolean);
   var main = parts[0] || "";
   var param = dec(parts.slice(1).join("/"));
 
@@ -32,6 +39,12 @@ export function route(opts) {
     case "series": html = V.browseFacet("series"); break;
     case "directors": html = V.browseFacet("directors"); break;
     case "stats": html = V.stats(); break;
+    case "filter": {
+      var params = {};
+      ["q", "actress", "tag", "maker", "series"].forEach(function (k) { if (sp.get(k)) params[k] = sp.get(k); });
+      html = V.combinedFilterView(params);
+      break;
+    }
     default: html = '<div class="empty">' + esc(T("err_page")) + esc(h) + "</div>";
   }
 

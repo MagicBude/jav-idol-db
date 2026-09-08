@@ -1,4 +1,4 @@
-// components/toolbar.js — 上下文工具条（作品视图切换 + 排序 + 计数）
+// components/toolbar.js — 上下文工具条（作品视图切换 + 排序 + 分组）
 // 仅「作品类」视图（首页最新 / 作品列表 / 搜索 / 筛选 / 女优详情的作品区）使用；
 // 女优总览网格与统计页不使用视图切换。
 
@@ -10,11 +10,16 @@ var SORT_OPTS = [
   ["rating_desc", "s_rating_desc"], ["duration_desc", "s_duration_desc"], ["code_asc", "s_code_asc"]
 ];
 
+// 分组维度（作品内联分组页；none = 不分组成单一网格）
+export var GROUP_OPTS = [
+  ["none", "g_none"], ["year", "g_year"], ["maker", "g_maker"]
+];
+
 /**
- * @param opts { count, showView, showSort, sortValue }
+ * @param opts { count, showView, showSort, sortValue, groupBy }
  *   showView: 是否显示 海报墙/封面/列表 切换
  *   showSort: 是否显示排序下拉
- *   sortValue: 当前排序 key
+ *   groupBy:  当前分组 key（none/year/maker），null 表示不显示分组控件
  */
 export function toolbar(opts) {
   opts = opts || {};
@@ -23,6 +28,15 @@ export function toolbar(opts) {
     parts.push('<span class="count">' + opts.count + " " + T("f_works") + "</span>");
   }
   parts.push('<span class="grow"></span>');
+  if (opts.groupBy !== null && opts.groupBy !== undefined) {
+    var gsel = '<label class="sortsel-wrap"><span class="sortsel-label">' + T("group_by") + "</span>" +
+      '<select id="groupsel" class="sortsel">';
+    GROUP_OPTS.forEach(function (o) {
+      gsel += '<option value="' + o[0] + '"' + (o[0] === opts.groupBy ? " selected" : "") + ">" + T(o[1]) + "</option>";
+    });
+    gsel += "</select></label>";
+    parts.push(gsel);
+  }
   if (opts.showView) {
     var vm = getViewMode();
     var seg = '<div class="viewseg" role="group" aria-label="view">';

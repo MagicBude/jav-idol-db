@@ -5,21 +5,52 @@
 import { esc, imgTag, enc } from "../core/util.js";
 import { T, actressName, tagName, workTitle, statusText, statusClass, workMatchesQuery } from "../core/i18n.js";
 import { getLang } from "../core/state.js";
-import { WORKS, ACTRESSES, actressCount, workCount, filterByType, searchWorks, actressByName, BY_CODE, groupActressesByAgency } from "../core/data.js";
-import { workGrid, actressGrid, chip, chips } from "./cards.js";
+import { WORKS, ACTRESSES, actressCount, workCount, filterByType, searchWorks, actressByName, BY_CODE, groupActressesByAgency, groupWorksBy, filterCombined } from "../core/data.js";
+import { workGrid, actressGrid, chip, chips, sampleThumbs } from "./cards.js";
 import { toolbar, SORTERS } from "./toolbar.js";
 import { buildExtButtons } from "../core/sources.js";
 
-// 当前作品视图的列表与排序（排序下拉刷新时由 main.js 复用）
-export var viewState = { recs: [], sort: "date_desc" };
+// 当前作品视图的列表与排序（排序 / 分组下拉刷新时由 main.js 复用）
+export var viewState = { recs: [], sort: "date_desc", groupBy: "none" };
 
-/** 作品区：工具条 + 网格（写入 viewState 供排序刷新） */
-function worksSection(recs, sortValue, showView) {
+/** 渲染作品网格或内联分组（供 worksSection 与 main 刷新复用） */
+export function renderGrid(recs, sortValue, groupBy) {
+  var sorted = recs.slice().sort(SORTERS[sortValue] || SORTERS.date_desc);
+  if (groupBy && groupBy !== "none") return renderGroups(sorted, groupBy);
+  return workGrid(sorted);
+}
+
+/** 作品按字段内联分组（year/maker）：每段一个 sticky 小标题 + 网格 */
+function renderGroups(recs, field) {
+  var groups = groupWorksBy(field, recs);
+  if (field === "year") {
+    groups.sort(function (a, b) { return (b.key || "").localeCompare(a.key || ""); });
+  }
+  if (!groups.length) return '<div class="empty">' + T("empty_works") + "</div>";
+  return groups.map(function (g) {
+    var title = g.key || T("unknown");
+    return '<section class="wg"><div class="wg-head"><span>' + esc(title) + '</span>' +
+      '<span class="n">' + g.count + " " + T("f_works") + '</span></div>' +
+      workGrid(g.recs) + "</section>";
+  }).join("");
+}
+
+/**
+ * 作品区：工具条（计数 / 分组 / 视图切换 / 排序）+ 网格或分组。
+ * @param groupBy undefined → 不显示分组控件；否则传当前分组 key（none/year/maker）
+ */
+function worksSection(recs, sortValue, showView, groupBy) {
   viewState.recs = recs;
   viewState.sort = sortValue || "date_desc";
-  var sorted = recs.slice().sort(SORTERS[viewState.sort] || SORTERS.date_desc);
-  return toolbar({ count: recs.length, showView: showView !== false, showSort: true, sortValue: viewState.sort }) +
-    '<div id="gridwrap">' + workGrid(sorted) + "</div>";
+  viewState.groupBy = (groupBy === undefined) ? null : groupBy;
+  var body = renderGrid(viewState.recs, viewState.sort, viewState.groupBy || "none");
+  return toolbar({
+    count: recs.length,
+    showView: showView !== false,
+    showSort: true,
+    sortValue: viewState.sort,
+    groupBy: viewState.groupBy
+  }) + '<div id="gridwrap">' + body + "</div>";
 }
 
 /* ============================ 首页 ============================ */
@@ -147,14 +178,34 @@ export function searchView(q) {
     return (
       '<div class="crumb"><a href="#/">' + esc(T("brand")) + "</a><span class=\"sep\">/</span>" + esc(T("crumb_all")) + "</div>" +
       '<div class="block-head"><h2>' + esc(T("nav_works")) + '</h2><span class="muted">' + workCount() + " " + esc(T("f_works")) + "</span></div>" +
-      worksSection(WORKS.slice(), "date_desc", true)
+      worksSection(WORKS.slice(), "date_desc", true, viewState.groupBy || "none")
     );
   }
   var recs = searchWorks(q, workMatchesQuery);
   return (
     '<div class="crumb"><a href="#/">' + esc(T("brand")) + '</a><span class="sep">/</span>' + esc(T("crumb_search")) + '：<b>' + esc(q) + "</b></div>" +
     '<div class="block-head"><h2>' + esc(T("results")) + '</h2><span class="muted">' + recs.length + " " + esc(T("f_works")) + "</span></div>" +
-    worksSection(recs, "date_desc", true)
+    worksSection(recs, "date_desc", true, viewState.groupBy || "none")
+  );
+}
+
+/* ============================ 组合筛选（筛选弹窗） ============================ */
+/** params: { q, actress, tag, maker, series }（均为「包含」匹配，AND 组合） */
+export function combinedFilterView(params) {
+  params = params || {};
+  var recs = filterCombined(params);
+  var desc = [];
+  if (params.q) desc.push(esc(params.q));
+  if (params.actress) desc.push(T("filter_actress") + "：" + esc(params.actress));
+  if (params.tag) desc.push(T("filter_tag") + "：" + esc(params.tag));
+  if (params.maker) desc.push(T("filter_maker") + "：" + esc(params.maker));
+  if (params.series) desc.push(T("filter_series") + "：" + esc(params.series));
+  return (
+    '<div class="crumb"><a href="#/">' + esc(T("brand")) + '</a><span class="sep">/</span>' + esc(T("filter_title")) +
+      (desc.length ? " / <b>" + desc.join(" · ") + "</b>" : "") + "</div>" +
+    '<div class="block-head"><h2>' + esc(T("filter_title")) + '</h2><span class="muted">' + recs.length + " " + esc(T("f_works")) + "</span>" +
+      '<a class="more" href="#/filter">' + esc(T("open_filter")) + "</a></div>" +
+    worksSection(recs, "date_desc", true, viewState.groupBy || "none")
   );
 }
 
@@ -247,6 +298,7 @@ export function workDetail(code) {
         '<div class="code">' + esc(w.code) + "</div>" + rows +
         (tagHtml ? '<div class="tags">' + tagHtml + "</div>" : "") +
         (ext ? '<div class="extwrap">' + ext + "</div>" : "") +
+        (sampleThumbs(w) ? '<section class="block"><div class="block-head"><h2>' + esc(T("f_samples")) + '</h2></div>' + sampleThumbs(w) + "</section>" : "") +
       "</div></div>" +
     (w.synopsis ? '<section class="block"><div class="block-head"><h2>' + esc(T("f_synopsis")) + '</h2></div><p class="synopsis">' + esc(w.synopsis) + "</p></section>" : "")
   );

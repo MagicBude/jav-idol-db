@@ -18,6 +18,13 @@ var LANG = LANGS.indexOf(lsGet("lang", "ja")) >= 0 ? lsGet("lang", "ja") : "ja";
 // ---- 作品视图模式（仅作用于「作品网格」，女优网格独立不受影响）----
 var VIEW_MODE = VIEW_MODES.indexOf(lsGet("view", "poster")) >= 0 ? lsGet("view", "poster") : "poster";
 
+// ---- 卡片悬停来源图标层（可开关；默认开）----
+// 仅控制「作品卡悬停时是否浮出外部来源圆形图标」，与三视图/主题无关。
+var HOVER_SRC = (function () {
+  var v = lsGet("hoverSrc", "1");
+  return v === "1" || v === "true";
+})();
+
 // ---- 主题（默认浅色；记忆用户选择，否则跟随系统）----
 var THEME = (function () {
   var t = lsGet("theme", null);
@@ -37,6 +44,7 @@ function notify(evt) { listeners.forEach(function (fn) { fn(evt); }); }
 export function getLang() { return LANG; }
 export function getViewMode() { return VIEW_MODE; }
 export function getTheme() { return THEME; }
+export function getHoverSrc() { return HOVER_SRC; }
 export function langList() { return LANGS.slice(); }
 export function viewModes() { return VIEW_MODES.slice(); }
 
@@ -59,6 +67,13 @@ export function setTheme(t) {
   THEME = t; lsSet("theme", t);
   applyThemeAttr(t);
   notify({ type: "theme" });
+}
+
+export function setHoverSrc(on) {
+  on = !!on;
+  if (on === HOVER_SRC) return;
+  HOVER_SRC = on; lsSet("hoverSrc", on ? "1" : "0");
+  notify({ type: "hoversrc" });
 }
 
 /** 把主题写到 <html data-theme>（CSS 据此切换变量） */

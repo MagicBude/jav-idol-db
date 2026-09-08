@@ -5,6 +5,9 @@
 // 依赖：仅依赖 window.JAV_DB（全局），不碰 DOM、不依赖其他 core 模块 —— 可独立单测。
 // 约定：所有视图/组件都从这里取数，禁止各自直接读 window.JAV_DB，避免重复遍历与漂移。
 
+// 中文感知搜索匹配器（来自 i18n，运行时调用，循环依赖安全）
+import { workMatchesQuery } from "./i18n.js";
+
 var DB = window.JAV_DB || { actresses: [], counts: {}, zh: {} };
 var ZH = DB.zh || {};
 
@@ -72,6 +75,38 @@ export function filterByType(type, value) {
 export function searchWorks(q, matchFn) {
   if (!q) return WORKS.slice();
   return WORKS.filter(function (r) { return matchFn(r, q.toLowerCase()); });
+}
+
+/**
+ * 组合筛选（筛选弹窗）：对多个维度做「包含」匹配，AND 组合。
+ * criteria = { q, actress, tag, maker, series }，任一为空则忽略该维度。
+ * 关键词 q 复用 searchWorks（中文感知），其余维度做「包含」匹配。
+ */
+export function filterCombined(criteria) {
+  criteria = criteria || {};
+  var actress = (criteria.actress || "").trim().toLowerCase();
+  var tag = (criteria.tag || "").trim().toLowerCase();
+  var maker = (criteria.maker || "").trim().toLowerCase();
+  var series = (criteria.series || "").trim().toLowerCase();
+  var base = criteria.q ? searchWorks(criteria.q, workMatchesQuery) : WORKS;
+  return base.filter(function (r) {
+    var w = r.w;
+    if (actress) {
+      var names = (w.actresses || []).concat(r.owner || []);
+      if (!names.some(function (n) { return (n || "").toLowerCase().indexOf(actress) >= 0; })) return false;
+    }
+    if (tag) {
+      if (!(w.tags || []).some(function (t) { return (t || "").toLowerCase().indexOf(tag) >= 0; })) return false;
+    }
+    if (maker) {
+      if (((w.maker || "").toLowerCase().indexOf(maker) < 0) &&
+          ((w.label || "").toLowerCase().indexOf(maker) < 0)) return false;
+    }
+    if (series) {
+      if ((w.series || "").toLowerCase().indexOf(series) < 0) return false;
+    }
+    return true;
+  });
 }
 
 /**
