@@ -82,7 +82,8 @@ def enrich_one(w, fetchers, force):
     if not force and has_imgs:
         return False, "已有 sample_images，跳过"
 
-    cover = w.get("cover")
+    existing_cover = w.get("cover")
+    cover = existing_cover          # 默认保留已有封面（可能是绝对 URL）
     samples = []
     for fetcher in fetchers:
         try:
@@ -91,7 +92,9 @@ def enrich_one(w, fetchers, force):
             res = None
         if not res:
             continue
-        if res.get("cover"):
+        # 仅在本地尚无封面、且抓到的是完整 http(s) URL 时才补封面；
+        # 绝不覆盖已有好数据（base.py 的幂等原则），避免 javbus 相对路径覆盖绝对封面。
+        if not existing_cover and res.get("cover") and str(res["cover"]).lower().startswith("http"):
             cover = res["cover"]
         if res.get("sample_images"):
             samples = res["sample_images"]

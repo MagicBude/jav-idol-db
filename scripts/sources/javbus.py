@@ -13,6 +13,7 @@ info 行用 <span> 标签定位字段名，再取对应值；同时兼容中文/
 javbus 年龄墙用 cookie `age=verified; existmag=mag`，静态请求带上即可。
 """
 import re
+from urllib.parse import urljoin
 import lxml.html as LH
 from .base import (Fetcher, canon_code, clean, run_with_browser,
                    wait_past_cf, http_get, looks_blocked)
@@ -146,6 +147,9 @@ def parse_javbus_html(html, std):
             cover = el[0].get("content") or el[0].get("href") or el[0].get("src")
             if cover:
                 break
+    # 相对路径（/pics/cover/... 或 //host/...）补齐为绝对 URL，否则站点加载会 404
+    if cover and not cover.lower().startswith("http"):
+        cover = urljoin("https://www.javbus.com", cover)
 
     # 预览图（缩略图集）：JavBoss 同款选择器，取 data-src/data-original/src（去重）
     sample_images = []
@@ -159,7 +163,8 @@ def parse_javbus_html(html, std):
                 u = a.get(attr)
                 if u and u not in seen_s:
                     seen_s.add(u)
-                    sample_images.append(u)
+                    sample_images.append(u if u.lower().startswith("http")
+                                       else urljoin("https://www.javbus.com", u))
                     break
 
     if not title:
