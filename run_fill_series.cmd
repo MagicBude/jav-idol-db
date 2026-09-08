@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-rem 切到脚本所在目录（仓库根目录）
+rem Switch to the script's directory (repo root)
 cd /d "%~dp0"
 
 set "PY=C:\Users\Admin\.workbuddy\binaries\python\envs\default\Scripts\python.exe"
@@ -14,94 +14,90 @@ set "LOG=.workbuddy\logs\fill_series.log"
 if not exist ".workbuddy\logs" mkdir ".workbuddy\logs"
 
 echo ==========================================
-echo IDOL DB - series 补全工具
-echo 仅处理缺 series 的作品: javmenu + javbus + javdb
-echo 当前目录: %CD%
+echo IDOL DB - series backfill tool
+echo Only works missing series. Sources: javmenu + javbus + javdb
+echo Working dir: %CD%
 echo ==========================================
 echo.
 
-rem 先预览，确认命中范围
-echo [1/5] 预览 --dry-run（只统计，不写库）...
+echo [1/5] Dry-run preview (count only, no writes)...
 "%PY%" scripts\update_metadata.py --missing series --sources javmenu,javbus,javdb --dry-run
 if errorlevel 1 (
     echo.
-    echo 预览失败，请检查上面的错误信息。
+    echo Preview failed. Check the errors above.
     pause
     exit /b 1
 )
 echo.
-choice /C YN /M "是否继续正式抓取（部分源需过 Cloudflare，耗时较长）"
+choice /C YN /M "Start full fetch now? (some sources need Cloudflare, slow)"
 if errorlevel 2 (
-    echo 已取消。
+    echo Cancelled.
     pause
     exit /b 0
 )
 
-rem 正式抓取
 echo.
-echo [2/5] 正式抓取（缺 series 的 1670 部左右）...
-echo 日志写入: %LOG%
+echo [2/5] Fetching missing series (~1670 works)...
+echo Log file: %LOG%
 "%PY%" scripts\update_metadata.py --missing series --sources javmenu,javbus,javdb > "%LOG%" 2>&1
 if errorlevel 1 (
     echo.
-    echo 抓取失败，请查看 %LOG%
+    echo Fetch failed. See %LOG%
     pause
     exit /b 1
 )
 
-rem 跑后清扫：格式噪声、归属保护、冲突 cast 回退
 echo.
-echo [3/5] 清扫格式噪声并保护归属字段...
+echo [3/5] Sweeping format noise and protecting attribution fields...
 "%PY%" scripts\sweep_works.py >> "%LOG%" 2>&1
 if errorlevel 1 (
     echo.
-    echo 清扫失败，请查看 %LOG%
+    echo Sweep failed. See %LOG%
     pause
     exit /b 1
 )
 
-rem 重建索引
 echo.
-echo [4/5] 重建站点索引...
+echo [4/5] Rebuilding site index...
 "%PY%" scripts\build_index.py >> "%LOG%" 2>&1
 if errorlevel 1 (
     echo.
-    echo 索引失败，请查看 %LOG%
+    echo Index build failed. See %LOG%
     pause
     exit /b 1
 )
 
 echo.
-echo [5/5] 抓取完成！
+echo [5/5] Done!
 git status --short
 echo.
 
-choice /C YN /M "是否提交并推送结果"
+choice /C YN /M "Commit and push results?"
 if errorlevel 2 (
-    echo 不提交，结束。
+    echo No commit. Finished.
     pause
     exit /b 0
 )
 
 git add data\works data\index.json site\assets\js\data.js
-git commit -m "data(works): 补全 series（javmenu+javbus+javdb）" >> "%LOG%" 2>&1
+git commit -m "data(works): backfill series via javmenu+javbus+javdb" >> "%LOG%" 2>&1
 if errorlevel 1 (
     echo.
-    echo 提交失败或无改动。
+    echo Commit failed or nothing to commit.
     pause
     exit /b 1
 )
 
-rem 优先走 SSH over 443，部分网络下 22 会被拦截
+rem Prefer SSH over 443 (port 22 may be blocked on some networks)
 set "GIT_SSH_COMMAND=ssh -p 443 -o Hostname=ssh.github.com -o StrictHostKeyChecking=no"
 git push origin main >> "%LOG%" 2>&1
 if errorlevel 1 (
-    echo SSH-443 推送失败，尝试普通 SSH...
+    echo SSH-443 push failed, trying normal SSH...
     set "GIT_SSH_COMMAND="
     git push origin main
 )
 
 echo.
-echo 全部完成。日志: %LOG%
+echo All done. Log: %LOG%
 pause
 
