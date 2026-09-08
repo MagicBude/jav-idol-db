@@ -49,6 +49,8 @@ export function route(opts) {
   }
 
   app.innerHTML = html;
+  // 视图切换淡入：每次重渲染先移除再强制重排后加回 .in，重新触发动画
+  app.classList.remove("in"); void app.offsetWidth; app.classList.add("in");
   paintChrome();
   if (opts.scroll !== false) window.scrollTo(0, 0);
 }

@@ -17,7 +17,13 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  scrollbar-color: var(--border-strong) transparent;
+  scrollbar-width: thin;
 }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted-2); }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
 button { font: inherit; cursor: pointer; }
@@ -151,7 +157,8 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .card:hover { transform: translateY(-2px); border-color: var(--border-strong); box-shadow: var(--shadow); }
 
 .card .thumb { position: relative; aspect-ratio: 2 / 3; background: var(--surface-2); overflow: hidden; }
-.card .img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.card .img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .4s ease; }
+.card:hover .img { transform: scale(1.045); }
 .card .ph { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 12px; padding: 10px; text-align: center; word-break: break-all; background: var(--surface-2); }
 
 .badge {
@@ -321,6 +328,9 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
   .brand-name { display: none; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .search .ico { display: none; }
+  .detail { grid-template-columns: 1fr; gap: 18px; }
+  .detail .poster { max-width: 300px; }
+  .block-head { flex-wrap: wrap; }
 }
 
 /* ---------- 15. Dark theme ---------- */
@@ -336,3 +346,14 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 [data-theme="dark"] .langseg .seg.active { background: #fff; color: #16181d; }
 [data-theme="dark"] .card .badge { background: rgba(0,0,0,.7); }
 [data-theme="dark"] .wg-head { background: var(--bg); }
+[data-theme="dark"] .search:focus-within { background: var(--surface-2); box-shadow: 0 0 0 3px var(--accent-weak); }
+[data-theme="dark"] .icon-btn { border-color: var(--border); }
+[data-theme="dark"] .chip { background: var(--surface); }
+
+/* 视图切换淡入 */
+@keyframes appIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+#app.in { animation: appIn .22s ease both; }
+
+/* Tab 激活指示（朱红下划线） */
+.tab.active { color: var(--accent-text); position: relative; }
+.tab.active::after { content: ""; position: absolute; left: 9px; right: 9px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); }
