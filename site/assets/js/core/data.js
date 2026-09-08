@@ -1,6 +1,9 @@
-// core/data.js — 数据访问层
-// 读取 window.JAV_DB（build_index.py 生成），构建扁平化作品集与查询助手。
-// 所有视图/组件都从这里取数，避免各自重复遍历。
+// core/data.js — 数据访问层（取数单一入口）
+//
+// 职责：读取 window.JAV_DB（由 scripts/build_index.py 生成），把它从「按女优嵌套」的
+// 原始结构，扁平化为「按作品」的查询友好结构，并暴露分组/筛选/搜索助手。
+// 依赖：仅依赖 window.JAV_DB（全局），不碰 DOM、不依赖其他 core 模块 —— 可独立单测。
+// 约定：所有视图/组件都从这里取数，禁止各自直接读 window.JAV_DB，避免重复遍历与漂移。
 
 var DB = window.JAV_DB || { actresses: [], counts: {}, zh: {} };
 var ZH = DB.zh || {};
@@ -13,6 +16,9 @@ export var ZH_TO_JP_ACTRESS = {};
 Object.keys(ACTRESS_ZH).forEach(function (jp) { ZH_TO_JP_ACTRESS[ACTRESS_ZH[jp]] = jp; });
 export var ZH_TO_JP_TAG = {};
 Object.keys(TAG_ZH).forEach(function (jp) { ZH_TO_JP_TAG[TAG_ZH[jp]] = jp; });
+
+// 女优列表（集中导出，视图层统一从这里取，避免散落读 window.JAV_DB）
+export var ACTRESSES = DB.actresses || [];
 
 // 扁平化作品（带上归属女优与头像）：[{ w, owner, ownerAvatar }]
 export var WORKS = [];
@@ -83,4 +89,50 @@ export function getViewRecs(main, param) {
   if (main === "d") return filterByType("d", param);
   if (main === "q") return null; // 搜索由 router 用 searchWorks 处理
   return WORKS.slice();
+}
+
+// ---- 分组（人物/作品按维度聚合）----
+
+var UNKNOWN = "__unknown__";
+
+/**
+ * 女优按事务所(agency)分组，对应「人物按事务所分」。
+ * 返回 [{ agency, count, actresses }]，按组内人数降序；无事务所者归入 null 组并置底。
+ * 视图层据此渲染分组标题 + 组内女优网格。
+ */
+export function groupActressesByAgency() {
+  var map = {};
+  ACTRESSES.forEach(function (a) {
+    var key = a.agency || UNKNOWN;
+    (map[key] = map[key] || []).push(a);
+  });
+  return Object.keys(map)
+    .map(function (k) { return { agency: k === UNKNOWN ? null : k, count: map[k].length, actresses: map[k] }; })
+    .sort(function (x, y) {
+      if (!x.agency) return 1;   // 未知组永远置底
+      if (!y.agency) return -1;
+      return y.count - x.count;   // 人数多的组在前
+    });
+}
+
+/**
+ * 作品按某字段分组（maker/label/series/director/year 等），对应「作品按厂商分」等。
+ * 返回 [{ key, count, recs }]，按数量降序；空值归入 null 组置底。
+ * recs 缺省取全部 WORKS；传入子集可做二次聚合（如某女优的作品再按年份分）。
+ */
+export function groupWorksBy(field, recs) {
+  recs = recs || WORKS;
+  var map = {};
+  recs.forEach(function (r) {
+    var v = (field === "year") ? (r.w.date || "").slice(0, 4) : (r.w[field] || "");
+    var key = v || UNKNOWN;
+    (map[key] = map[key] || []).push(r);
+  });
+  return Object.keys(map)
+    .map(function (k) { return { key: k === UNKNOWN ? null : k, count: map[k].length, recs: map[k] }; })
+    .sort(function (x, y) {
+      if (!x.key) return 1;
+      if (!y.key) return -1;
+      return y.count - x.count;
+    });
 }

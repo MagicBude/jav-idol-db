@@ -25,6 +25,8 @@ export function route(opts) {
     case "d": html = V.filterView("d", param); break;
     case "q": html = V.searchView(param); break;
     case "actresses": html = V.actressList(); break;
+    case "agencies": html = V.agencyList(); break;
+    case "agency": html = V.actressByAgency(param); break;
     case "tags": html = V.browseFacet("tags"); break;
     case "makers": html = V.browseFacet("makers"); break;
     case "series": html = V.browseFacet("series"); break;

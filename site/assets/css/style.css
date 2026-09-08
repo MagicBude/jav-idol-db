@@ -370,6 +370,13 @@ h1, h2, h3 { margin: 0; font-weight: 700; line-height: 1.25; }
 .menu .panel li:hover { background: var(--surface-2); }
 .menu .panel li.active { color: var(--accent-text); }
 
+/* ---------- 13b. Focus / 无障碍（键盘可达性） ---------- */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-xs);
+}
+.nav a:focus-visible { outline-offset: -2px; }
+.card:focus-visible { transform: translateY(-3px); border-color: var(--accent); }
+
 /* ---------- 13. Responsive ---------- */
 .hamburger { display: none; }
 @media (max-width: 960px) {

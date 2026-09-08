@@ -5,7 +5,7 @@
 import { esc, imgTag, enc } from "../core/util.js";
 import { T, actressName, tagName, workTitle, statusText, statusClass, workMatchesQuery } from "../core/i18n.js";
 import { getLang } from "../core/state.js";
-import { WORKS, actressCount, workCount, filterByType, searchWorks, actressByName, BY_CODE } from "../core/data.js";
+import { WORKS, ACTRESSES, actressCount, workCount, filterByType, searchWorks, actressByName, BY_CODE, groupActressesByAgency } from "../core/data.js";
 import { workGrid, actressGrid, chip, chips } from "./cards.js";
 import { toolbar, SORTERS } from "./toolbar.js";
 import { buildExtButtons } from "../core/sources.js";
@@ -33,7 +33,7 @@ export function home() {
   var hotTags = Object.keys(tagCount).sort(function (a, b) { return tagCount[b] - tagCount[a]; }).slice(0, 24);
 
   // 新晋女优（按作品最新发行倒推，取前 12）
-  var acts = DB_actresses().slice().sort(function (a, b) {
+  var acts = ACTRESSES.slice().sort(function (a, b) {
     return (b.works && b.works[0] && b.works[0].date || "").localeCompare((a.works && a.works[0] && a.works[0].date) || "");
   }).slice(0, 12);
 
@@ -57,15 +57,45 @@ export function home() {
   );
 }
 
-// 取女优数组（data.js 未直接导出 actress 列表，这里从 WORKS 反推较贵；改为从 DB 读）
-function DB_actresses() { return (window.JAV_DB && window.JAV_DB.actresses) || []; }
-
 /* ============================ 女优总览 ============================ */
 export function actressList() {
-  var acts = DB_actresses().slice().sort(function (a, b) { return (b.work_count || 0) - (a.work_count || 0); });
+  var acts = ACTRESSES.slice().sort(function (a, b) { return (b.work_count || 0) - (a.work_count || 0); });
   return (
     '<div class="crumb">' + esc(T("nav_actresses")) + "</div>" +
-    '<div class="block-head"><h2>' + esc(T("actresses")) + '</h2><span class="muted">' + acts.length + " " + esc(T("actresses")) + "</span></div>" +
+    '<div class="block-head"><h2>' + esc(T("actresses")) + '</h2>' +
+      '<span class="muted">' + acts.length + " " + esc(T("actresses")) + "</span>" +
+      '<a class="more" href="#/agencies" title="' + esc(T("nav_agencies")) + '">🏢 ' + esc(T("nav_agencies")) + " →</a></div>" +
+    actressGrid(acts)
+  );
+}
+
+/* ===================== 女优按事务所分组 ===================== */
+/** 事务所总览：chip 云，每个事务所带人数，点击进入该事务所女优列表 */
+export function agencyList() {
+  var groups = groupActressesByAgency();
+  var cloud = groups.map(function (g) {
+    var name = g.agency || T("agency_unknown");
+    return '<a class="chip" href="#/agency/' + enc(g.agency || "__unknown__") + '">' +
+      esc(name) + ' <span style="color:var(--muted);font-weight:500">' + g.count + "</span></a>";
+  }).join("");
+  return (
+    '<div class="crumb">' + esc(T("nav_library")) + " / <b>" + esc(T("nav_agencies")) + "</b></div>" +
+    '<div class="block-head"><h2>' + esc(T("nav_agencies")) + '</h2>' +
+      '<span class="muted">' + groups.length + " " + esc(T("agency_count")) + "</span></div>" +
+    '<div class="chipcloud">' + (cloud || '<span class="muted">—</span>') + "</div>"
+  );
+}
+
+/** 单个事务所的女优列表 */
+export function actressByAgency(agency) {
+  agency = (agency === "__unknown__") ? null : agency;
+  var acts = ACTRESSES.filter(function (a) { return (a.agency || null) === agency; })
+    .sort(function (a, b) { return (b.work_count || 0) - (a.work_count || 0); });
+  var title = agency || T("agency_unknown");
+  return (
+    '<div class="crumb"><a href="#/">' + esc(T("brand")) + '</a><span class="sep">/</span>' +
+      '<a href="#/agencies">' + esc(T("nav_agencies")) + '</a><span class="sep">/</span><b>' + esc(title) + "</b></div>" +
+    '<div class="block-head"><h2>' + esc(title) + '</h2><span class="muted">' + acts.length + " " + esc(T("actresses")) + "</span></div>" +
     actressGrid(acts)
   );
 }
@@ -158,7 +188,7 @@ export function actressDetail(name) {
         (a.retire_date ? row(T("f_retire"), esc(a.retire_date)) : "") +
         (a.comeback_date ? row(T("f_comeback"), esc(a.comeback_date)) : "") +
         (a.career_periods ? row(T("f_career"), esc(a.career_periods)) : "") +
-        (a.agency ? row(T("f_agency"), esc(a.agency)) : "") +
+        (a.agency ? row(T("f_agency"), '<a href="#/agency/' + enc(a.agency) + '">' + esc(a.agency) + " →</a>") : "") +
         (a.hobby ? row(T("f_hobby"), esc(a.hobby)) : "") +
         (a.debut_work ? row(T("f_debut_work"), esc(a.debut_work)) : "") +
         (a.blog ? row(T("f_blog"), '<a href="' + esc(a.blog) + '" target="_blank" rel="noopener">' + esc(a.blog) + "</a>") : "") +
@@ -248,7 +278,7 @@ export function stats() {
       '<span class="bar-val">' + v + "</span></div>";
   }
   var topMakers = topMap(makers, 15), topTags = topMap(tags, 24), topDirectors = topMap(directors, 10);
-  var actressRank = DB_actresses().slice().sort(function (a, b) { return (b.work_count || 0) - (a.work_count || 0); }).slice(0, 15);
+  var actressRank = ACTRESSES.slice().sort(function (a, b) { return (b.work_count || 0) - (a.work_count || 0); }).slice(0, 15);
 
   return (
     '<section class="hero"><h1>' + esc(T("stats_title")) + '</h1><p class="lead">' +

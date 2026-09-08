@@ -1,4 +1,26 @@
-// main.js — 入口：挂载外壳、路由、全局事件委托
+// main.js — 应用入口
+//
+// ┌─ 架构（分层，无构建步骤：纯 ES modules 直接由静态托管运行）─────────────────┐
+// │  core/        纯逻辑层（无 DOM 依赖，可独立单测）                          │
+// │    util.js    纯函数：HTML 转义 / <img> / hash 编解码 / 数字容错          │
+// │    state.js   集中状态：LANG · VIEW_MODE · THEME（localStorage 持久化 +    │
+// │               订阅广播 subscribe/notify），全站唯一真相源                  │
+// │    data.js    数据访问层：读 window.JAV_DB，扁平化作品 + 查询/分组助手      │
+// │    i18n.js    多语言文案 + 显示名（随语言切换）                            │
+// │    sources.js 作品外部来源链接（查看/搜索入口，集中维护）                  │
+// │  components/  视图组件（每个函数返回 HTML 字符串）                        │
+// │    cards.js   作品卡 / 女优卡 / 标签 chip                                  │
+// │    toolbar.js 作品视图工具条（视图切换 + 排序）                           │
+// │    layout.js  持久化外壳：左侧栏 + 顶部栏 + 移动端抽屉                     │
+// │    views.js   各路由页面（首页/女优/筛选/搜索/详情/统计/分组）             │
+// │  router.js    hash 路由：主段分发到 views.*，渲染到 #app                  │
+// │  main.js      入口：挂载外壳 + 绑定 + 路由 + 状态订阅                      │
+// └────────────────────────────────────────────────────────────────────────┘
+//
+// 数据流：scripts/build_index.py → window.JAV_DB → core/data.js(取数) → components/*(视图) → #app
+// 状态流：用户操作 → core/state.js(setX) → notify → 订阅者(main.js)做最小重渲染
+//   · lang 变更：整页重渲染（显示名切换）   · theme 变更：仅刷新图标
+//   · view  变更：仅切换 .grid--work 形态（女优网格独立不受影响）
 import { mountChrome, paintChrome } from "./components/layout.js";
 import { route } from "./router.js";
 import { subscribe, getViewMode, setViewMode } from "./core/state.js";

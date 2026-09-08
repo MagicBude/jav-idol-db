@@ -16,6 +16,7 @@ var NAV = [
     { route: "#/makers", icon: "🏭", key: "nav_makers" },
     { route: "#/series", icon: "📚", key: "nav_series" },
     { route: "#/directors", icon: "🎬", key: "nav_directors" },
+    { route: "#/agencies", icon: "🏢", key: "nav_agencies" },
     { route: "#/stats", icon: "📊", key: "nav_stats" }
   ]}
 ];
@@ -31,6 +32,7 @@ function activeRoute() {
   if (main === "m") return "#/makers";
   if (main === "s") return "#/series";
   if (main === "d") return "#/directors";
+  if (main === "agencies" || main === "agency") return "#/agencies";
   if (main === "stats") return "#/stats";
   return null;
 }
