@@ -1,47 +1,25 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>资料库 · IDOL DB</title>
+  <title>IDOL DB · 資料庫</title>
+  <meta name="description" content="女優・作品 資料庫 — 番号 / 片名 / 女優 / タグ で検索" />
   <link rel="stylesheet" href="assets/css/style.css" />
-  <!-- 防闪：在 CSS 应用前就定好主题，避免亮/暗跳变 -->
-  <script>
-    (function () {
-      try {
-        var t = localStorage.getItem("theme");
-        if (!t) t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", t);
-      } catch (e) {}
-    })();
-  </script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#/">IDOL<span class="dot">·</span>DB</a>
-    <div class="search">
-      <span class="ic">🔍</span>
-      <input id="search" type="text" placeholder="番号 / 片名 / 女优 / 标签…" />
+  <div class="scrim" id="scrim"></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar"><!-- 由 layout.mountChrome 填充 --></aside>
+    <div class="main">
+      <header class="topbar" id="topbar"><!-- 由 layout.mountChrome 填充 --></header>
+      <main class="content" id="app"><!-- 由 router 填充 --></main>
     </div>
-    <div class="topbar-tools">
-      <div class="dd lang-dd" id="langdd">
-        <button type="button" class="dd-btn" id="langbtn" aria-haspopup="true" aria-expanded="false">
-          <span id="langlabel">日本語</span><span class="caret">▾</span>
-        </button>
-        <ul class="dd-menu" id="langmenu" role="menu">
-          <li role="menuitem" data-lang="ja">日本語</li>
-          <li role="menuitem" data-lang="zh">中文</li>
-        </ul>
-      </div>
-      <button type="button" class="theme-btn" id="themebtn" title="切换亮/暗主题" aria-label="切换亮暗主题">🌙</button>
-    </div>
-  </header>
+  </div>
 
-  <main class="wrap">
-    <div id="app"><!-- 由 app.js 渲染 --></div>
-  </main>
-
+  <!-- 数据（build_index.py 生成）：经典脚本先执行，挂载 window.JAV_DB -->
   <script src="assets/js/data.js"></script>
-  <script src="assets/js/app.js"></script>
+  <!-- 入口：ES module（defer，DOM 解析后执行，可读取 window.JAV_DB） -->
+  <script type="module" src="assets/js/main.js"></script>
 </body>
 </html>
