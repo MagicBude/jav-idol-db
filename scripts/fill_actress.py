@@ -20,6 +20,7 @@ fill_actress.py —— 用 minnano-av 批量补全女优档案
 import argparse
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -93,22 +94,132 @@ def save_profile(path, data):
         f.write("\n")
 
 
+def fill_baike(names, apply=False):
+    """百度百科补充：候选名直连试错，只补空档 + 中文名/中文别名/词条链接。"""
+    from sources.baike import BaikeFetcher
+
+    # Baike 侧可补空档的字段（existing 优先铁律同样适用）
+    BAIKE_FILL = [
+        "birthdate", "height", "bust", "waist", "hips", "cup",
+        "birthplace", "blood_type",
+    ]
+
+    def _derive(name):
+        """派生候选：々展开 → 繁/日汉字转简体 → JP 特有字映射。"""
+        out = [name]
+        # 々 展开为前一字符：奈々 → 奈奈
+        exp = re.sub(r"(.)々", lambda m: m.group(1) + m.group(1), name)
+        if exp != name:
+            out.append(exp)
+        base = exp
+        try:
+            from zhconv import convert
+            simp = convert(base, "zh-cn")
+            if simp != base:
+                out.append(simp)
+            base = simp
+        except ImportError:
+            pass
+        # zhconv 不覆盖的日文汉字（实测：郷/瀬/戸 均保留日体）
+        for src, dst in (("郷", "乡"), ("瀬", "濑"), ("戸", "户"), ("槇", "槙")):
+            if src in base:
+                base = base.replace(src, dst)
+        if base != out[-1]:
+            out.append(base)
+        return out
+
+    with open(ALIAS_FILE, encoding="utf-8") as f:
+        clusters = json.load(f)
+
+    def candidates_for(name, profile):
+        """候选词条名：派生名 → alias.json 簇成员 → minnano/中文別名。"""
+        cands = _derive(name)
+        if name in clusters:
+            cands += clusters[name]
+        else:
+            for v in clusters.values():
+                if name in v:
+                    cands += v
+                    break
+        cands += profile.get("aliases") or []
+        cands += profile.get("aliases_zh") or []
+        seen, out = set(), []
+        for c in cands:
+            if c and c not in seen:
+                seen.add(c)
+                out.append(c)
+        return out
+
+    fetcher = BaikeFetcher()
+    stats = {"hit": 0, "miss": 0, "changed": 0}
+    try:
+        for name in names:
+            existing, path = load_profile(name)
+            hit = None
+            for cand in candidates_for(name, existing):
+                url, html = fetcher.fetch(cand)
+                if not html:
+                    continue
+                from sources.baike import parse_baike_html
+                info = parse_baike_html(html)
+                if info:
+                    hit = (cand, url, info)
+                    break
+            if not hit:
+                print(f"[MISS] {name}: baike 无词条")
+                stats["miss"] += 1
+                continue
+            cand, url, info = hit
+            stats["hit"] += 1
+            merged = dict(existing)
+            changed = []
+            for field in BAIKE_FILL:
+                val = info.get(field)
+                if val and (merged.get(field) in (None, "", [])):
+                    merged[field] = val
+                    changed.append(field)
+            for field in ("name_zh", "aliases_zh", "notable_work", "real_name"):
+                val = info.get(field)
+                if val and not merged.get(field):
+                    merged[field] = val
+                    changed.append(field)
+            if url and not merged.get("baike_url"):
+                merged["baike_url"] = url
+                changed.append("baike_url")
+            # 中文名不应与目录名相同（如 永野一夏 词条名=永野一夏）
+            if merged.get("name_zh") == name:
+                # 仍保留（显示一致），但不算变更点
+                changed = [c for c in changed if c != "name_zh"] or changed
+            if not changed:
+                print(f"[KEEP] {name}: baike 命中（{cand}）但无空档可补")
+                continue
+            stats["changed"] += 1
+            if apply:
+                save_profile(path, merged)
+                print(f"[FILL] {name}: 命中「{cand}」 +{', '.join(changed)}")
+            else:
+                print(f"[DRY ] {name}: 命中「{cand}」 将补 {', '.join(changed)}")
+    finally:
+        fetcher.close()
+    mode = "APPLY" if apply else "DRY-RUN"
+    print(f"\n== baike {mode} == 命中 {stats['hit']} / 未命中 {stats['miss']} / "
+          f"补全 {stats['changed']}")
+
+
 def main():
-    ap = argparse.ArgumentParser(description="minnanoav 女优档案补全")
+    ap = argparse.ArgumentParser(description="minnanoav/baike 女优档案补全")
     ap.add_argument("--apply", action="store_true", help="正式写盘（默认 dry-run）")
     ap.add_argument("--name", help="只处理指定女优（目录名）")
     ap.add_argument("--query", help="检索名覆盖（目录名与 minnano 正式名不一致时用，"
                                      "如目录 永野一夏 / 正式名 永野いち夏），须与 --name 同用")
+    ap.add_argument("--baike", action="store_true",
+                    help="改用百度百科源补档（出生地/中文名/代表作等，Playwright 移动版）")
     ap.add_argument("--sync-alias", action="store_true",
                     help="把各 profile 的 minnano 別名并入 data/actress/alias.json 对应簇")
     ap.add_argument("--rebuild", action="store_true", help="完成后重建站点索引")
     args = ap.parse_args()
     if args.query and not args.name:
         ap.error("--query 必须与 --name 同用")
-
-    if args.sync_alias:
-        sync_alias(apply=args.apply)
-        return
 
     names = sorted(
         d for d in os.listdir(ACTRESS_DIR)
@@ -119,6 +230,18 @@ def main():
         if not names:
             print("未找到女优目录:", args.name)
             sys.exit(1)
+
+    if args.baike:
+        fill_baike(names, apply=args.apply)
+        if args.rebuild and args.apply:
+            import subprocess
+            subprocess.run([sys.executable, os.path.join(ROOT, "scripts", "build_index.py")],
+                           check=True)
+        return
+
+    if args.sync_alias:
+        sync_alias(apply=args.apply)
+        return
 
     fetcher = MinnanoavActressFetcher()
     stats = {"hit": 0, "miss": 0, "changed": 0, "error": 0}
