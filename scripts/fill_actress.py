@@ -224,6 +224,8 @@ def main():
                     help="改用百度百科源补档（出生地/中文名/代表作等，Playwright 移动版）")
     ap.add_argument("--all", action="store_true",
                     help="遍历站点索引全部女优（含无目录者，自动建档）")
+    ap.add_argument("--only-missing", action="store_true",
+                    help="只处理无档案/关键字段为空的女优（birthdate/height/debut_work 全空）")
     ap.add_argument("--sync-alias", action="store_true",
                     help="把各 profile 的 minnano 別名并入 data/actress/alias.json 对应簇")
     ap.add_argument("--rebuild", action="store_true", help="完成后重建站点索引")
@@ -243,6 +245,12 @@ def main():
         if not names:
             print("未找到女优目录:", args.name)
             sys.exit(1)
+    if args.only_missing:
+        key_fields = ("birthdate", "height", "debut_work")
+        before = len(names)
+        names = [n for n in names
+                 if not any(load_profile(n)[0].get(f) for f in key_fields)]
+        print(f"--only-missing: {before} → {len(names)} 位待补")
 
     if args.baike:
         fill_baike(names, apply=args.apply)

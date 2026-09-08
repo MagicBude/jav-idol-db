@@ -4,7 +4,7 @@
   "date": "2022-01-13",
   "actress": "波多野結衣",
   "source": "filename",
-  "updated_at": "2026-09-01",
+  "updated_at": "2026-09-08",
   "cover": "https://awsimgsrc.dmm.co.jp/pics_dig/digital/video/1nhdtb00618/1nhdtb00618pl.jpg",
   "actresses": [
     "波多野結衣"
@@ -40,5 +40,6 @@
   "rating_count": 22,
   "director": "KANSUKE",
   "source_url": "https://www.codeav.net/movie/nhdtb-618",
-  "duration": 481
+  "duration": 481,
+  "series": "B"
 }

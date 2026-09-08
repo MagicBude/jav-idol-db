@@ -7,12 +7,15 @@ javbus.com Fetcher —— 中文圈常用，CF 拦截较重。
 Playwright 只负责过 CF 拿到 page.content()。标签匹配借鉴社区刮削器的做法：每个
 info 行用 <span> 标签定位字段名，再取对应值；同时兼容中文/英文标签。
 
-javbus 详情页用 cookie `age=verified; existmag=mag` 过年龄墙（静态请求亦可，但
-本源在本环境被 CF 挡，故统一走 Playwright）。
+2026-09-08 更新：先前以为本源「被 CF 挡必须走浏览器」，实为脚本没走系统代理 →
+ 直连被墙。改由 base.ensure_proxy() 自动挂代理后，静态 urllib 直连即 200 且无 CF
+ 挑战，故 fetch_html 改为「静态优先 + 浏览器兜底」，速度提升一个量级。
+javbus 年龄墙用 cookie `age=verified; existmag=mag`，静态请求带上即可。
 """
 import re
 import lxml.html as LH
-from .base import Fetcher, canon_code, clean, run_with_browser, wait_past_cf
+from .base import (Fetcher, canon_code, clean, run_with_browser,
+                   wait_past_cf, http_get, looks_blocked)
 
 
 # 番号前缀改写：javbus 把 gana/mium/luxu 重定向到带数字前缀的页面
@@ -94,11 +97,11 @@ def parse_javbus_html(html, std):
             value = clean(" ".join(s.text_content() for s in spans[1:]))
         else:
             txt = clean(p.text_content())
-            if ":" in txt or "：" in txt:
-                label, _, value = re.split(r"[:：]", txt, 1)
-                label, value = clean(label), clean(value)
-            else:
+            parts = re.split(r"[:：]", txt, 1) if (":" in txt or "：" in txt) else None
+            # 注意：maxsplit=1 时 re.split 只返回 2 段，按 3 段解包会 ValueError
+            if not parts or len(parts) < 2:
                 continue
+            label, value = clean(parts[0]), clean(parts[1])
         field = _classify(label)
         if not field:
             continue
@@ -158,22 +161,47 @@ def parse_javbus_html(html, std):
 
 class JavbusFetcher(Fetcher):
     name = "javbus"
+    BASES = ["https://www.javbus.com", "https://www.javbus.one"]
+    # 年龄墙 cookie（静态请求带上即可，与网页版的 age=verified 等价）
+    COOKIE = "dv=1"
 
-    def fetch(self, code, hint=None):
-        std = canon_code(code)
-        req = _javbus_req_code(std)
+    def __init__(self, allow_browser=True, timeout=20):
+        self.allow_browser = allow_browser
+        self.timeout = timeout
+
+    def url_for(self, std):
+        return f"{self.BASES[0]}/{_javbus_req_code(std)}"
+
+    def fetch_html(self, std):
+        """静态优先：走代理的 urllib 直连即可拿到完整详情页（2026-09-08 验证）。
+        被拦时才降级到 Playwright 过 CF。"""
+        url = self.url_for(std)
+        html, err = http_get(url, timeout=self.timeout, headers={"Cookie": self.COOKIE})
+        if html and not looks_blocked(html):
+            return html, url
+        if self.allow_browser and err != "HTTP404":
+            h2 = self._browser_get(url)
+            return (h2, url) if h2 else (None, url)
+        return None, url
+
+    def _browser_get(self, url):
         try:
             def _go(page):
-                page.goto(f"https://www.javbus.com/{req}",
-                          wait_until="domcontentloaded", timeout=30000)
+                page.goto(url, wait_until="domcontentloaded", timeout=30000)
                 if not wait_past_cf(page, page.locator("h3, #cover, .bigImage"),
                                     timeout=70000):
                     return None
-                html = page.content()
-                res = parse_javbus_html(html, std)
-                if res:
-                    res["source_url"] = page.url
-                return res
+                return page.content()
             return run_with_browser(_go, locale="zh-TW")
         except Exception:
             return None
+
+    def fetch(self, code, hint=None):
+        std = canon_code(code)
+        html, url = self.fetch_html(std)
+        if not html:
+            return None
+        res = parse_javbus_html(html, std)
+        if res:
+            res["source_url"] = url
+        return res

@@ -4,7 +4,7 @@
   "date": "2022-04-21",
   "actress": "波多野結衣",
   "source": "filename",
-  "updated_at": "2026-09-01",
+  "updated_at": "2026-09-08",
   "cover": "https://awsimgsrc.dmm.co.jp/pics_dig/digital/video/1nhdtb00654/1nhdtb00654pl.jpg",
   "actresses": [
     "波多野結衣"
@@ -42,5 +42,6 @@
   "rating_count": 28,
   "director": "イタカ・スミスリンパウダー",
   "source_url": "https://www.codeav.net/movie/nhdtb-654",
-  "duration": 366
+  "duration": 366,
+  "series": "B"
 }

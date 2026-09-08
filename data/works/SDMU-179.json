@@ -11,7 +11,7 @@
   "actress_url": "",
   "maker": "SODクリエイト",
   "label": "SOD女子社員",
-  "series": null,
+  "series": "SOD女子社員",
   "duration": 130,
   "tags": [
     "企画",
@@ -35,5 +35,5 @@
   "_sources": {
     "codeav": "ok"
   },
-  "updated_at": "2026-08-31"
+  "updated_at": "2026-09-08"
 }

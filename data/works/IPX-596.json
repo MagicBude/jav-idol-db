@@ -10,7 +10,7 @@
   ],
   "maker": "アイデアポケット",
   "label": "ティッシュ",
-  "series": null,
+  "series": "接吻レクチャー個人レッスン",
   "duration": 118,
   "tags": [
     "家教",
@@ -43,5 +43,5 @@
   "_sources": {
     "javbus": "ok"
   },
-  "updated_at": "2026-08-31"
+  "updated_at": "2026-09-08"
 }

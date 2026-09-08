@@ -4,7 +4,7 @@
   "date": "2022-05-12",
   "actress": "波多野結衣",
   "source": "filename",
-  "updated_at": "2026-09-01",
+  "updated_at": "2026-09-08",
   "cover": "https://awsimgsrc.dmm.co.jp/pics_dig/digital/video/1nhdtb00665/1nhdtb00665pl.jpg",
   "actresses": [
     "波多野結衣"
@@ -39,5 +39,6 @@
   "rating": 4.0,
   "rating_count": 6,
   "source_url": "https://www.codeav.net/movie/nhdtb-665",
-  "duration": 241
+  "duration": 241,
+  "series": "B"
 }

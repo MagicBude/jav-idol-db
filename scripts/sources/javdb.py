@@ -12,7 +12,9 @@ class="value">值</span>。男优用 ♂ 符号标记，需过滤。
 """
 import re
 import lxml.html as LH
-from .base import Fetcher, canon_code, clean, run_with_browser, wait_past_cf, click_age_gate
+from urllib.parse import quote, urljoin
+from .base import (Fetcher, canon_code, clean, run_with_browser, wait_past_cf,
+                   click_age_gate, http_get, looks_blocked)
 
 
 _LABELS = {
@@ -174,40 +176,83 @@ def parse_javdb_html(html, std):
 
 class JavdbFetcher(Fetcher):
     name = "javdb"
-    DOMAINS = ["https://javdb.com", "https://javdb.tv", "https://javdb39.com"]
+    DOMAINS = ["https://javdb.com", "https://javdb39.com", "https://javdb.tv"]
+
+    def __init__(self, allow_browser=True, timeout=20):
+        self.allow_browser = allow_browser
+        self.timeout = timeout
+
+    # --- 搜索结果里挑出「番号完全相等」的那一条 -----------------------
+    @staticmethod
+    def _pick_href(html, std):
+        """搜不到的绝不将就：javdb 的 f=all 是模糊搜索，搜 SSIS-001 也会返回
+        PSIS-001 / SHIS-001。照抄第一条等于给作品灌上别人的 series —— 宁可漏，
+        不可错。因此这里只认 div.video-title/strong 里的番号与 std 完全相等者。"""
+        try:
+            doc = LH.fromstring(html)
+        except Exception:
+            return None
+        for a in doc.xpath("//a[contains(@href,'/v/')]"):
+            strongs = a.xpath(".//div[contains(@class,'video-title')]//strong")
+            if not strongs:
+                continue
+            uid = clean(strongs[0].text_content())
+            if uid and canon_code(uid) == std:
+                return a.get("href")
+        return None
+
+    def _static(self, domain, std):
+        search_url = f"{domain}/search?q={quote(std)}&f=all"
+        html, err = http_get(search_url, referer=f"{domain}/")
+        if not html or looks_blocked(html):
+            return None, (err or "BLOCKED")
+        href = self._pick_href(html, std)
+        if not href:
+            return None, "NOHIT"
+        detail = urljoin(domain + "/", href.lstrip("/"))
+        dhtml, derr = http_get(detail, referer=search_url, timeout=self.timeout)
+        if not dhtml or looks_blocked(dhtml):
+            return None, (derr or "BLOCKED")
+        res = parse_javdb_html(dhtml, std)
+        if res:
+            res["source_url"] = detail
+        return res, None
+
+    def _browser(self, domain, std):
+        try:
+            def _go(page):
+                page.goto(f"{domain}/search?q={std}&f=all",
+                          wait_until="domcontentloaded", timeout=30000)
+                click_age_gate(page)
+                if not wait_past_cf(page,
+                                    page.locator("a[href^='/v/'], .item-title a"),
+                                    timeout=60000):
+                    return None
+                href = self._pick_href(page.content(), std)
+                if not href:
+                    return None
+                detail = urljoin(domain + "/", href.lstrip("/"))
+                page.goto(detail, wait_until="domcontentloaded", timeout=30000)
+                click_age_gate(page)
+                page.wait_for_timeout(1200)
+                res = parse_javdb_html(page.content(), std)
+                if res:
+                    res["source_url"] = detail
+                return res
+            return run_with_browser(_go, locale="ja-JP")
+        except Exception:
+            return None
 
     def fetch(self, code, hint=None):
         std = canon_code(code)
-        last = None
         for domain in self.DOMAINS:
-            try:
-                def _go(page):
-                    page.goto(f"{domain}/search?q={std}&f=all",
-                              wait_until="domcontentloaded", timeout=30000)
-                    click_age_gate(page)
-                    if not wait_past_cf(page,
-                                        page.locator("a[href^='/v/'], .item-title a"),
-                                        timeout=60000):
-                        return None
-                    link = page.locator("a[href^='/v/']").first
-                    if not link.count():
-                        return None
-                    href = link.get_attribute("href")
-                    if not href:
-                        return None
-                    page.goto(domain + href, wait_until="domcontentloaded",
-                              timeout=30000)
-                    click_age_gate(page)
-                    page.wait_for_timeout(1500)
-                    html = page.content()
-                    res = parse_javdb_html(html, std)
-                    if res:
-                        res["source_url"] = page.url
-                    return res
-                res = run_with_browser(_go, locale="ja-JP")
+            res, err = self._static(domain, std)
+            if res:
+                return res
+            if err == "NOHIT":
+                continue                      # 主域没这部，换镜像也白搭
+            if self.allow_browser:
+                res = self._browser(domain, std)
                 if res:
                     return res
-                last = res
-            except Exception:
-                continue
-        return last
+        return None

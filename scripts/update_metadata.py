@@ -32,6 +32,7 @@ update_metadata.py —— 多源自主回补编排器
 import os
 import sys
 import json
+import time
 import argparse
 import datetime
 
@@ -89,6 +90,16 @@ def collect_targets(args):
             if not title or src in (None, "pending"):
                 targets.append((hint, std, p))
     return targets
+
+
+def only_fields_filter(res, fields):
+    """裁剪 fetch 结果：只保留允许回补的字段（外加 source/source_url 标记）。
+
+    目的：某些源的字段口径与本站不一致（javbus 片的maker 是日文假名写法、
+    javdb 的 tags 是繁体中文），全量合并会污染既有干净数据。
+    """
+    keep = set(fields) | {"code", "source", "source_url"}
+    return {k: v for k, v in res.items() if k in keep}
 
 
 def build_chain(use_hard):
@@ -156,7 +167,14 @@ def main():
     ap.add_argument("--sources", default="", help="仅用指定源(逗号分隔)，如 codeav,javlibrary")
     ap.add_argument("--missing", default="",
                     help="只处理指定字段为空的作品（如 series），与 --all 互斥、用于攻克特定缺口")
+    ap.add_argument("--fields", default="",
+                    help="只回补指定字段(逗号分隔)，如 series,director；默认全部字段。"\
+                         "用于避免某些源的中文标签/日式片商名污染既有干净数据")
+    ap.add_argument("--sleep", type=float, default=0.3,
+                    help="每个源请求之间的间隔秒数，防止把源站打挂/被限流")
     args = ap.parse_args()
+
+    only_fields = {s.strip() for s in args.fields.split(",") if s.strip()}
 
     if not (args.code or args.pending or args.all or args.missing):
         ap.error("需指定 --code / --pending / --all / --missing 之一")
@@ -192,18 +210,31 @@ def main():
             except Exception as e:
                 print(f"    [{fetcher.name}] ERR {e}", flush=True)
                 continue
+            if args.sleep:
+                time.sleep(args.sleep)
+            # 命中即印日志（此时还没做字段裁剪，便于对照源站原始返回）
+            if res:
+                print(f"    [{fetcher.name}] " +
+                      ((res.get("title") or "")[:40] or "(no title)") +
+                      (f" | series={res.get('series')}" if res.get("series") else "") +
+                      (f" | dir={res.get('director')}" if res.get("director") else "") +
+                      (f" | {res.get('date')}" if res.get("date") else ""), flush=True)
             if not res:
                 continue
-            changed = merge_work(existing, res)
+            feed = only_fields_filter(res, only_fields) if only_fields else res
+            if not feed:
+                continue
+            changed = merge_work(existing, feed)
             if changed:
                 work_changed = True
                 filled_from = fetcher.name
                 stats["by_source"][fetcher.name] = stats["by_source"].get(fetcher.name, 0) + 1
-                print(f"    [{fetcher.name}] + " +
-                      (res.get("title") or "")[:40] +
-                      (f" | {res.get('date')}" if res.get("date") else ""), flush=True)
-                # 拿到标题即视为可用，停止链式（避免无谓的慢源）
-                if (existing.get("title") or "").strip():
+                if only_fields:
+                    # 目标字段全补齐就收工，不再跑后面的慢源
+                    if all(not _is_empty(existing.get(f)) for f in only_fields):
+                        break
+                elif (existing.get("title") or "").strip():
+                    # 默认模式：拿到标题即视为可用
                     break
 
         if not (existing.get("title") or "").strip():

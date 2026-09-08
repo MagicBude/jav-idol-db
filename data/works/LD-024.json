@@ -11,7 +11,7 @@
   "actress_url": "https://www.codeav.net/actress/n-cea65373350d",
   "maker": "ファインピクチャーズ",
   "label": "Lover’s Day",
-  "series": null,
+  "series": "Lover’s Day",
   "duration": 89,
   "tags": [
     "アイドル・芸能人",
@@ -35,5 +35,5 @@
   "_sources": {
     "codeav": "ok"
   },
-  "updated_at": "2026-08-31"
+  "updated_at": "2026-09-08"
 }

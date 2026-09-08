@@ -54,6 +54,120 @@ def human_mode():
     return os.environ.get("JAV_HUMAN") == "1"
 
 
+# ---------------------------------------------------------------------------
+# 静态 HTTP：代理探测 + 统一 GET
+# ---------------------------------------------------------------------------
+# 背景：本机靠系统代理出网（Clash 一类），浏览器自动继承系统代理，但 urllib
+# 只认 HTTP(S)_PROXY 环境变量 → 脚本直连必被墙。这就是之前 javbus/javdb
+# 「CF 拦截」的真因：不是 CF 挡，是压根没走对出口。
+# 2026-09-08 实测：走对代理后 javbus / javdb / avsox / missav 全 200 且无 CF 挑战，
+# 于是这些源从「Playwright 重浏览器」降级为「静态 urllib」，速度提升一个量级。
+def detect_system_proxy():
+    """读取 Windows 系统代理（IE Internet Settings）。返回 "http://host:port" 或 None。
+
+    支持 ProxyServer 的几种写法：
+      127.0.0.1:7790
+      http=127.0.0.1:7790;https=127.0.0.1:7790
+      socks=127.0.0.1:1080      -> 不支持，返回 None
+    """
+    try:
+        import winreg
+        with winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Internet Settings",
+        ) as k:
+            enable = winreg.QueryValueEx(k, "ProxyEnable")[0]
+            server = winreg.QueryValueEx(k, "ProxyServer")[0]
+    except Exception:
+        return None
+    if not enable or not server:
+        return None
+    s = str(server).strip()
+    if "socks" in s.lower():
+        return None
+    part = None
+    if "=" in s:                       # http=...;https=...
+        for kv in s.split(";"):
+            if "=" in kv:
+                kk, _, v = kv.partition("=")
+                if kk.strip().lower() in ("http", "https"):
+                    part = v.strip()
+                    break
+    else:
+        part = s
+    if not part:
+        return None
+    if not part.lower().startswith(("http://", "https://")):
+        part = "http://" + part
+    return part
+
+
+def ensure_proxy():
+    """把代理写进 HTTP(S)_PROXY 环境变量（没设置过才写），供 urllib 使用。
+
+    优先级：JAV_PROXY > 已有的 HTTP(S)_PROXY > Windows 系统代理。
+    JAV_NO_PROXY=1 时跳过（沙箱直连调试用）。"""
+    if os.environ.get("JAV_NO_PROXY") == "1":
+        return None
+    forced = os.environ.get("JAV_PROXY")
+    if forced:
+        os.environ["HTTP_PROXY"] = forced
+        os.environ["HTTPS_PROXY"] = forced
+        return forced
+    if os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY"):
+        return os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
+    p = detect_system_proxy()
+    if p:
+        os.environ["HTTP_PROXY"] = p
+        os.environ["HTTPS_PROXY"] = p
+    return p
+
+
+def http_get(url, timeout=20, referer=None, headers=None, retries=2):
+    """静态取 HTML，返回 (html, err)。err 为 None 表示成功。
+
+    自动挂代理（ensure_proxy），超时/连接异常会重试若干次；
+    4xx 属于正常「未命中」（该站没这部），不重试。
+    """
+    import urllib.request
+    import urllib.error
+    ensure_proxy()
+    h = {
+        "User-Agent": UA,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "ja,zh-CN;q=0.9,zh;q=0.8,en;q=0.7",
+    }
+    if referer:
+        h["Referer"] = referer
+    if headers:
+        h.update(headers)
+    last = None
+    for _ in range(max(1, retries + 1)):
+        try:
+            req = urllib.request.Request(url, headers=h)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return r.read().decode("utf-8", "replace"), None
+        except urllib.error.HTTPError as e:
+            return None, f"HTTP{e.code}"
+        except Exception as e:
+            last = type(e).__name__
+    return None, last or "ERR"
+
+
+def looks_blocked(html):
+    """抓到的是 Cloudflare 挑战页 / 空壳页而不是真实内容时为 True。"""
+    if not html:
+        return True
+    if len(html) < 2000:
+        return True
+    low = html.lower()
+    for sig in ("just a moment", "checking your browser", "__cf_chl",
+                "cf-browser-verification", "attention required"):
+        if sig in low:
+            return True
+    return False
+
+
 def canon_code(code):
     """把各种写法归一为标准番号：大写、规范分隔符、保留数字原样（不补零/不去零）。
     例：ipx-005 -> IPX-005；IPX005 -> IPX-005；SNOS-3 -> SNOS-3；1stars00145 -> 1STARS-00145。"""

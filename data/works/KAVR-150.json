@@ -4,7 +4,7 @@
   "date": "2021-03-25",
   "actress": "白桃はな",
   "source": "filename",
-  "updated_at": "2026-08-31",
+  "updated_at": "2026-09-08",
   "cover": "https://awsimgsrc.dmm.co.jp/pics_dig/digital/video/kavr00150/kavr00150pl.jpg",
   "actresses": [
     "白桃はな"
@@ -31,5 +31,6 @@
   "director": "クワッチー",
   "source_url": "https://www.codeav.net/movie/kavr-150",
   "label": "kawaii* VR",
-  "duration": 84
+  "duration": 84,
+  "series": "kawaii*VR"
 }

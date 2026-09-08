@@ -4,7 +4,7 @@
   "date": "2021-06-15",
   "actress": "波多野結衣",
   "source": "filename",
-  "updated_at": "2026-09-01",
+  "updated_at": "2026-09-08",
   "cover": "https://awsimgsrc.dmm.co.jp/pics_dig/digital/video/bnst00030/bnst00030pl.jpg",
   "actresses": [
     "波多野結衣"
@@ -44,5 +44,6 @@
   "rating_count": 16,
   "director": "さもあり",
   "source_url": "https://www.codeav.net/movie/bnst-030",
-  "duration": 135
+  "duration": 135,
+  "series": "チクシャ！"
 }

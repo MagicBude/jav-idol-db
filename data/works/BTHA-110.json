@@ -11,7 +11,7 @@
   "actress_url": "https://www.codeav.net/actress/n-75b8809a7970",
   "maker": "スパークビジョン",
   "label": "ビューティーヘアー",
-  "series": null,
+  "series": "ビューティーヘアー",
   "duration": 126,
   "tags": [
     "女優ベスト・総集編",
@@ -33,5 +33,5 @@
   "_sources": {
     "codeav": "ok"
   },
-  "updated_at": "2026-08-31"
+  "updated_at": "2026-09-08"
 }
