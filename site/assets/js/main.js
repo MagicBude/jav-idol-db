@@ -71,6 +71,18 @@ function bindViewButtons() {
   });
 }
 
+// 卡片悬停来源角标点击：用 <span> 代替嵌套 <a>，这里处理新标签页打开
+function bindSrcChips() {
+  document.addEventListener("click", function (e) {
+    var chip = e.target.closest ? e.target.closest(".src-chip") : null;
+    if (!chip) return;
+    var href = chip.getAttribute("data-href");
+    if (href) window.open(href, "_blank", "noopener,noreferrer");
+    e.stopPropagation();
+    e.preventDefault();
+  });
+}
+
 // 状态变更广播
 subscribe(function (evt) {
   if (evt.type === "lang") { route({ scroll: false }); }       // 重渲染整页以切换显示名
@@ -84,6 +96,7 @@ function boot() {
   bindSort();
   bindGroups();
   bindViewButtons();
+  bindSrcChips();
   window.addEventListener("hashchange", route);
   route();
 }

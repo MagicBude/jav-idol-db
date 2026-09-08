@@ -25,8 +25,8 @@ export function workCard(rec) {
   var title = workTitle(w) ? esc(workTitle(w)) : T("pending_title");
 
   var thumb = w.cover
-    ? '<img class="img img--poster" src="' + esc(poster) + '" alt="' + esc(w.code) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' +
-      '<img class="img img--cover" src="' + esc(fanart) + '" alt="' + esc(w.code) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
+    ? '<img class="img img--poster" src="' + esc(poster) + '" alt="' + esc(w.code) + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">' +
+      '<img class="img img--cover" src="' + esc(fanart) + '" alt="' + esc(w.code) + '" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
     : '<span class="ph">' + esc(w.code) + "</span>";
 
   var hover = getHoverSrc()

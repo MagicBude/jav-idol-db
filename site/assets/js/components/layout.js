@@ -40,7 +40,7 @@ export function mountChrome() {
   if (!topbar) return;
 
   var tabs = NAV.map(function (it) {
-    return '<a href="' + it.route + '" data-nav="' + it.route + '" class="tab">' + esc(T(it.key)) + "</a>";
+    return '<a href="' + it.route + '" data-nav="' + it.route + '" data-key="' + esc(it.key) + '" class="tab">' + esc(T(it.key)) + "</a>";
   }).join("");
 
   topbar.innerHTML =
@@ -193,6 +193,8 @@ export function paintChrome() {
   var links = document.querySelectorAll("#topnav .tab");
   for (var i = 0; i < links.length; i++) {
     links[i].classList.toggle("active", links[i].getAttribute("data-nav") === act);
+    var k = links[i].getAttribute("data-key");
+    if (k) links[i].textContent = T(k);   // 语言切换时同步更新 Tab 文案
   }
   var lja = document.getElementById("lang-ja"), lzh = document.getElementById("lang-zh");
   if (lja) lja.classList.toggle("active", lang === "ja");

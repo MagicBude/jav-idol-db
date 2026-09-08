@@ -108,9 +108,10 @@ export function sourceIconChips(w) {
   if (!list.length) return "";
   return list.map(function (e) {
     var m = chipMeta(e.key);
-    return '<a class="src-chip" style="--c:' + m.color + '" href="' + esc(e.href) +
-      '" target="_blank" rel="noopener" title="' + esc(e.label) + '" aria-label="' + esc(e.label) + '">' +
-      esc(m.short) + "</a>";
+    // 用 <span> 而非 <a>：卡片本身已是 <a>，嵌套 <a> 会导致浏览器解析时把卡片内容清空。
+    return '<span class="src-chip" style="--c:' + m.color + '" data-href="' + esc(e.href) +
+      '" title="' + esc(e.label) + '" aria-label="' + esc(e.label) + '">' +
+      esc(m.short) + "</span>";
   }).join("");
 }
 
