@@ -48,6 +48,13 @@ def load_profile(name):
     return {"name": name}, path
 
 
+def index_actress_names():
+    """站点索引里的全部女优名（137 位），用于为无目录女优建档。"""
+    idx = os.path.join(ROOT, "data", "index.json")
+    with open(idx, encoding="utf-8") as f:
+        return [a["name"] for a in json.load(f).get("actresses", [])]
+
+
 def merge_profile(existing, fetched):
     """只补空档，返回 (merged, changed_keys)。"""
     merged = dict(existing)
@@ -88,7 +95,8 @@ def merge_profile(existing, fetched):
 
 
 def save_profile(path, data):
-    """LF + indent=2 写盘（仓库规范）。"""
+    """LF + indent=2 写盘（仓库规范）；目录不存在则创建。"""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
@@ -214,6 +222,8 @@ def main():
                                      "如目录 永野一夏 / 正式名 永野いち夏），须与 --name 同用")
     ap.add_argument("--baike", action="store_true",
                     help="改用百度百科源补档（出生地/中文名/代表作等，Playwright 移动版）")
+    ap.add_argument("--all", action="store_true",
+                    help="遍历站点索引全部女优（含无目录者，自动建档）")
     ap.add_argument("--sync-alias", action="store_true",
                     help="把各 profile 的 minnano 別名并入 data/actress/alias.json 对应簇")
     ap.add_argument("--rebuild", action="store_true", help="完成后重建站点索引")
@@ -221,10 +231,13 @@ def main():
     if args.query and not args.name:
         ap.error("--query 必须与 --name 同用")
 
-    names = sorted(
-        d for d in os.listdir(ACTRESS_DIR)
-        if os.path.isdir(os.path.join(ACTRESS_DIR, d))
-    )
+    if args.all:
+        names = index_actress_names()
+    else:
+        names = sorted(
+            d for d in os.listdir(ACTRESS_DIR)
+            if os.path.isdir(os.path.join(ACTRESS_DIR, d))
+        )
     if args.name:
         names = [n for n in names if n == args.name]
         if not names:
