@@ -50,33 +50,37 @@ class CodeavFetcher(Fetcher):
         m = re.search(r'"datePublished"\s*:\s*"(\d{4}-\d{2}-\d{2})"', html)
         result["date"] = m.group(1) if m else None
 
-        # 女优：只用 JSON-LD 的 actor 主演字段（codeav 对本片唯一可靠的女优信号）。
-        # 注意：页面上的 /actress/ <li> 列表与 avatar 头像卡片都是全站统一的
-        # 「相关/人气女优」挂件（几乎每个影片都一致），绝不能当作本片卡司。
-        m = re.search(r'"actor"\s*:\s*\[\s*\{\s*"@type"\s*:\s*"Person"\s*,\s*"name"\s*:\s*"([^"]+)', html)
-        if not m:
-            m = re.search(r'"actor"\s*:\s*\{\s*"@type"\s*:\s*"Person"\s*,\s*"name"\s*:\s*"([^"]+)', html)
-        if not m:
-            m = re.search(r'"actor"\s*:\s*\[?\s*\{?\s*"name"\s*:\s*"([^"]+)', html)
-        actress = clean(m.group(1)) if m else ""
-        actress_url = ""
-        # 从 JSON-LD actor[].url 精确拿到女优详情页 slug（最可靠）
-        m2 = re.search(r'"actor"\s*:\s*\[?\s*\{[^}]*"name"\s*:\s*"([^"]+)"[^}]*"url"\s*:\s*"([^"]+)"', html)
-        if m2:
-            if clean(m2.group(1)) == actress or not actress:
-                actress = clean(m2.group(1))
-                actress_url = m2.group(2)
-        # 兜底：指向具体女优详情页 /actress/（单数）的链接文字；
-        # 排除导航占位「女優 / もっと見る / フィルモグラフィー」等。
-        if not actress or actress == "女優":
-            m = re.search(r'href="[^"]*/actress/[^"]*"[^>]*>([^<]+)</a>', html, re.I)
-            if m:
-                t = clean(m.group(1))
+        # 女优：把 JSON-LD 里出现的【全部】actor 都抓出来保留（全字段）。
+        # 重要：codeav 的 JSON-LD actor 通常只列「主演」1 人，不是全卡司，
+        # 也【绝不能单独用它判定作品归属】——共演 / 企划跨厂牌作品里它常是
+        # 另一位演员（之前误把神木蘭的 MFCS-150/MFC-330/MGTD-046 判成波多野結衣/
+        # 美木ひなの 即源于此）。页面上的 /actress/ <li> 列表与头像卡片是全站统一的
+        # 「相关/人气女优」挂件，也不能当本片卡司。归属以合集元数据 / 文件名 /
+        # javbus·javdb 全卡司数组为准。故此处只「全量保留」，不「下归属结论」。
+        block = None
+        mb = re.search(r'"actor"\s*:\s*(\[[^\]]*\]|\{[^{}]*\})', html, re.S)
+        if mb:
+            block = mb.group(1)
+        actors = []
+        if block:
+            for nm in re.finditer(r'"name"\s*:\s*"([^"]+)"', block):
+                actors.append(clean(nm.group(1)))
+        # 兜底：指向具体女优详情页 /actress/（单数）的链接文字，排导航噪音
+        if not actors:
+            for mm in re.finditer(r'href="[^"]*/actress/[^"]*"[^>]*>([^<]+)</a>', html, re.I):
+                t = clean(mm.group(1))
                 if t and t not in ("女優", "もっと見る", "フィルモグラフィー", "のその他の作品"):
-                    actress = t
-        result["actress"] = actress
-        result["actresses"] = [actress] if actress else []
-        result["actress_url"] = actress_url
+                    actors.append(t)
+        seen = set()
+        actors = [a for a in actors if a and a not in seen and not seen.add(a)]
+        result["actress"] = actors[0] if actors else ""
+        result["actresses"] = actors
+        # 女优详情页 slug：取 actor 块内的 url（多 actor 时取首个）
+        result["actress_url"] = ""
+        if block:
+            um = re.search(r'"url"\s*:\s*"([^"]+)"', block)
+            if um:
+                result["actress_url"] = um.group(1)
 
         # 厂商 maker
         m = re.search(r'"productionCompany"\s*:\s*\{\s*"@type"\s*:\s*"Organization"\s*,\s*"name"\s*:\s*"([^"]+)"', html)
