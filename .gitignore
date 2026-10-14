@@ -76,3 +76,6 @@ _tmp/
 
 # ── 115 整理批次作业产物（可重生成，不入库）──
 .internal/
+
+# WorkBuddy 代理运行时目录（logs / memory 等，非源码，不入库）
+.workbuddy/
