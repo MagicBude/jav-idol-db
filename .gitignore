@@ -73,3 +73,6 @@ data/attribution_report.json
 _cache/
 # 临时诊断/还原文件（_tmp/ 下仅放比对样本，非交付物）
 _tmp/
+
+# ── 115 整理批次作业产物（可重生成，不入库）──
+.internal/
